@@ -23,7 +23,7 @@ public strictfp class RobotPlayer {
      * import at the top of this file. Here, we *seed* the RNG with a constant number (6147); this makes sure
      * we get the same sequence of numbers every time this code is run. This is very useful for debugging!
      */
-    static final Random rng = new Random(6147);
+    static final Random rng = new Random();
 
     /** Array containing all the possible movement directions. */
     static final Direction[] directions = {
@@ -50,6 +50,10 @@ public strictfp class RobotPlayer {
         Direction.EAST,
         Direction.WEST,
     };
+
+    static int targetx = -1;
+    static int targety = -1;
+    static int randnum = -1;
 
     /**
      * run() is the method that is called when a robot is instantiated in the Battlecode world.
@@ -84,10 +88,10 @@ public strictfp class RobotPlayer {
                 // this into a different control structure!
                 switch (rc.getType()) {
                     case ARCHON:     runArchon(rc);  break;
+                    case LABORATORY: runLab(rc); break;
                     case MINER:      runMiner(rc);   break;
                     case BUILDER: runBuilder(rc); break;
                     case SOLDIER:    runSoldier(rc); break;
-                    case LABORATORY: runLab(rc); break;
                     case WATCHTOWER: runWatch(rc); break; // You might want to give them a try!
                     case SAGE: runSage(rc); break;
                 }
@@ -123,6 +127,10 @@ public strictfp class RobotPlayer {
         // Pick a direction to build in.
         Direction dir = directions[rng.nextInt(directions.length)];
         int rn = rc.getRoundNum();
+        if (rn<=1){
+            rc.writeSharedArray(10, rc.getLocation().x);
+            rc.writeSharedArray(11, rc.getLocation().y);
+        }
         if (rn<100) {
             if (rng.nextBoolean()) {
                 // Let's try to build a miner.
@@ -173,28 +181,32 @@ public strictfp class RobotPlayer {
     static void runMiner(RobotController rc) throws GameActionException {
         // Try to mine on squares around us.
         MapLocation me = rc.getLocation();
+        int count = rc.senseLead(me);
         double maxs = 0;
         int bestx = 0;
         int besty = 0;
-        for (int dx = -1; dx <= 1; dx++) {
-            for (int dy = -1; dy <= 1; dy++) {
-                MapLocation mineLocation = new MapLocation(me.x + dx, me.y + dy);
-                // Notice that the Miner's action cooldown is very low.
-                // You can mine multiple times per turn!
-                // double metric = rc.senseGold(mineLocation) + 0.5*rc.senseLead(mineLocation);
-                // if (metric >= maxs){
-                //     maxs = metric;
-                //     bestx = dx;
-                //     besty = dy;
-                // }
-                while (rc.canMineGold(mineLocation)) {
-                    rc.mineGold(mineLocation);
-                }
-                while (rc.canMineLead(mineLocation)) {
-                    rc.mineLead(mineLocation);
+        if (count!=0){
+            for (int dx = -1; dx <= 1; dx++) {
+                for (int dy = -1; dy <= 1; dy++) {
+                    MapLocation mineLocation = new MapLocation(me.x + dx, me.y + dy);
+                    // Notice that the Miner's action cooldown is very low.
+                    // You can mine multiple times per turn!
+                    // double metric = rc.senseGold(mineLocation) + 0.5*rc.senseLead(mineLocation);
+                    // if (metric >= maxs){
+                    //     maxs = metric;
+                    //     bestx = dx;
+                    //     besty = dy;
+                    // }
+                    while (rc.canMineGold(mineLocation)) {
+                        rc.mineGold(mineLocation);
+                    }
+                    while (rc.canMineLead(mineLocation)) {
+                        rc.mineLead(mineLocation);
+                    }
                 }
             }
         }
+       
         // Direction dir = directions[0];
         // boolean stay = false;
         
@@ -236,7 +248,7 @@ public strictfp class RobotPlayer {
         //     System.out.println("I moved!");
         // }
     //else if (stay){
-        if (rc.senseLead(rc.getLocation())==0){
+        if (count==0){
             Direction dir2 = directions[rng.nextInt(directions.length)];
             if (rc.canMove(dir2)) {
                 rc.move(dir2);
@@ -253,6 +265,32 @@ public strictfp class RobotPlayer {
      */
     static void runSoldier(RobotController rc) throws GameActionException {
         // Try to attack someone
+        rc.setIndicatorString(""+targetx+" "+targety+" "+randnum);
+        if(targetx==-1 || targety==-1 || (rc.canSenseRobotAtLocation(new MapLocation(targetx, targety)) && rc.senseRobotAtLocation(new MapLocation(targetx, targety)).type!=RobotType.ARCHON)){
+            int r = 0;
+            if (randnum==-1){
+                r = rng.nextInt(3);
+                randnum = r;
+            }
+            else {
+                r = (randnum+1)%3;
+                randnum = r;
+            }
+            
+            if (r==0){
+                targetx = rc.getMapWidth()-rc.readSharedArray(10);
+                targety = rc.getMapHeight()-rc.readSharedArray(11);
+            }
+            else if (r==1){
+                targetx = rc.getMapWidth()-rc.readSharedArray(10);
+                targety = rc.readSharedArray(11);
+            }
+            else {
+                targetx = rc.readSharedArray(10);
+                targety = rc.getMapHeight()-rc.readSharedArray(11);
+            }
+        }
+
         int radius = rc.getType().actionRadiusSquared;
         Team opponent = rc.getTeam().opponent();
         RobotInfo[] enemies = rc.senseNearbyRobots(radius, opponent);
@@ -262,12 +300,20 @@ public strictfp class RobotPlayer {
                 rc.attack(toAttack);
             }
         }
-
+        
         // Also try to move randomly.
-        Direction dir = directions[rng.nextInt(directions.length)];
+        MapLocation temp = new MapLocation(targetx, targety);
+        Direction dir = rc.getLocation().directionTo(temp);
         if (rc.canMove(dir)) {
             rc.move(dir);
-            System.out.println("I moved!");
+            //System.out.println("I moved!");
+        }
+        else {
+            dir = directions[rng.nextInt(directions.length)] ;
+            if (rc.canMove(dir)) {
+                rc.move(dir);
+                //System.out.println("I moved!");
+            }
         }
     }
 
@@ -292,6 +338,11 @@ public strictfp class RobotPlayer {
         for (int a=0; a<li.length; a++){
             if (li[a].type == RobotType.ARCHON){
                 cont = true;
+            }
+            if (li[a].type == RobotType.WATCHTOWER){
+                if(rc.canMutate(li[a].location)){
+                    rc.mutate(li[a].location);
+                }
             }
         }
 
@@ -345,7 +396,11 @@ public strictfp class RobotPlayer {
 
     static void runLab(RobotController rc) throws GameActionException {
         // Try to attack someone
-        if (rc.canTransmute()){
+        rc.setIndicatorString(""+rc.canTransform());
+        if (rc.getMode()==RobotMode.PORTABLE && rc.canTransform()){
+            rc.transform();
+        }
+        else if (rc.isActionReady()){
             rc.transmute();
         }
     }
