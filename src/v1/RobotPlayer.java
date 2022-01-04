@@ -334,15 +334,23 @@ public strictfp class RobotPlayer {
         // Try to attack someone
         MapLocation me = rc.getLocation();
         boolean cont = false;
+        boolean dontmove = false;
         RobotInfo[] li = rc.senseNearbyRobots(8);
         for (int a=0; a<li.length; a++){
             if (li[a].type == RobotType.ARCHON){
                 cont = true;
             }
-            if (li[a].type == RobotType.WATCHTOWER){
-                if(rc.canMutate(li[a].location)){
-                    rc.mutate(li[a].location);
+            if (li[a].type == RobotType.WATCHTOWER || li[a].type == RobotType.LABORATORY){
+                if(li[a].health<li[a].type.health && rc.canRepair(li[a].location)){
+                    rc.repair(li[a].location);
+                    dontmove = true;
                 }
+                
+                if(li[a].level<3 && rc.canMutate(li[a].location)){
+                    rc.mutate(li[a].location);
+                    dontmove = true;
+                }
+                
             }
         }
 
@@ -368,7 +376,7 @@ public strictfp class RobotPlayer {
 
         // Also try to move randomly.
         Direction dir2 = modded[rng.nextInt(modded.length)];
-        if (rc.canMove(dir2)) {
+        if (!dontmove && rc.canMove(dir2)) {
             rc.move(dir2);
             System.out.println("I moved!");
         }
@@ -395,12 +403,7 @@ public strictfp class RobotPlayer {
     }
 
     static void runLab(RobotController rc) throws GameActionException {
-        // Try to attack someone
-        rc.setIndicatorString(""+rc.canTransform());
-        if (rc.getMode()==RobotMode.PORTABLE && rc.canTransform()){
-            rc.transform();
-        }
-        else if (rc.isActionReady()){
+        if (rc.isActionReady()){
             rc.transmute();
         }
     }
