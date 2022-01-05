@@ -16,17 +16,7 @@ public class Robot {
 
     MapLocation myLoc;
     RobotType myType;
-
-    static final Direction[] directions = {
-            Direction.NORTH,
-            Direction.NORTHEAST,
-            Direction.EAST,
-            Direction.SOUTHEAST,
-            Direction.SOUTH,
-            Direction.SOUTHWEST,
-            Direction.WEST,
-            Direction.NORTHWEST,
-    };
+    Team myTeam, opponentTeam;
 
     public Robot(RobotController rc) {
         Robot.rc = rc;
@@ -39,6 +29,8 @@ public class Robot {
 
         myLoc = rc.getLocation();
         myType = rc.getType();
+        myTeam = rc.getTeam();
+        opponentTeam = myTeam.opponent();
     }
 
     void playTurn() throws GameActionException {

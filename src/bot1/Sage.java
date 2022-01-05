@@ -3,9 +3,34 @@ package bot1;
 import battlecode.common.*;
 
 public class Sage extends Droid {
-    public Sage(RobotController rc) {
-        super(rc);
+    enum Mode {
+        ATTACK,
+        DEFEND
     }
 
-    void playTurn() throws GameActionException {}
+    Mode mode;
+
+    public Sage(RobotController rc) {
+        super(rc);
+        mode = Mode.DEFEND;
+    }
+
+    void playTurn() throws GameActionException {
+        switch (mode) {
+            case ATTACK:
+                attack();
+                break;
+            case DEFEND:
+                defend();
+                break;
+        }
+    }
+
+    void attack() throws GameActionException {
+
+    }
+
+    void defend() throws GameActionException {
+
+    }
 }

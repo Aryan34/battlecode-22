@@ -9,7 +9,7 @@ public class Archon extends Building {
     }
 
     void playTurn() throws GameActionException {
-        Direction dir = directions[rng.nextInt(directions.length)];
+        Direction dir = Navigation.directions[rng.nextInt(Navigation.directions.length)];
 
         if (roundNum < 100) {
             if (rng.nextBoolean()) {
@@ -47,7 +47,7 @@ public class Archon extends Building {
                 rc.buildRobot(RobotType.SAGE, dir);
             }
         } else {
-            MapLocation repairLoc = util.optimalRepairTarget();
+            MapLocation repairLoc = util.lowestHealthRepairTarget();
             if (rc.canRepair(repairLoc)) {
                 rc.repair(repairLoc);
             }

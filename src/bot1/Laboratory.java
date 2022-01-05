@@ -7,5 +7,9 @@ public class Laboratory extends Building {
         super(rc);
     }
 
-    void playTurn() throws GameActionException {}
+    void playTurn() throws GameActionException {
+        if (rc.getTeamLeadAmount(rc.getTeam()) > 1000 && rc.isActionReady()) {
+            rc.transmute();
+        }
+    }
 }

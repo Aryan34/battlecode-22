@@ -57,7 +57,29 @@ public class Navigation {
         this.robot = robot;
     }
 
-    public void brownian() throws GameActionException {
+    boolean moveRandom() throws GameActionException {
+        Direction dir = directions[Robot.rng.nextInt(directions.length)];
+        if (rc.canMove(dir)) {
+            rc.move(dir);
+            System.out.println("I moved!");
+            return true;
+        }
+
+        return false;
+    }
+
+    boolean moveTowards(MapLocation loc) throws GameActionException {
+        Direction dir = robot.myLoc.directionTo(loc);
+        if (rc.canMove(dir)) {
+            rc.move(dir);
+            System.out.println("I moved!");
+            return true;
+        }
+
+        return false;
+    }
+
+    void brownian() throws GameActionException {
         double netX = 0;
         double netY = 0;
         double robotCharge = 100;
@@ -103,6 +125,7 @@ public class Navigation {
         if (dir != Direction.CENTER && rc.canMove(dir)) {
             if (rc.getRoundNum() - visited[brownianDest.x][brownianDest.y] < RECENTLY_VISITED_THRESHOLD) {
                 // TODO: Implement a move to least recently visited tile and use that here
+                moveRandom();
                 System.out.println("Already visited this tile recently, so not moving here");
             } else {
                 rc.move(dir);
