@@ -3,6 +3,8 @@ package bot1;
 import battlecode.common.*;
 
 public class Miner extends Droid {
+    MapLocation depositLoc = null;
+
     public Miner(RobotController rc) {
         super(rc);
     }
@@ -30,5 +32,18 @@ public class Miner extends Droid {
             rc.move(dir);
             System.out.println("I moved!");
         }
+    }
+
+    boolean findDeposit() throws GameActionException {
+        int largestDeposit = 0;
+        for (MapLocation loc : rc.getAllLocationsWithinRadiusSquared(rc.getLocation(), rc.getType().visionRadiusSquared)) {
+            if (rc.senseLead(loc) > largestDeposit) {
+                largestDeposit = rc.senseLead(loc);
+                depositLoc = loc;
+                return true;
+            }
+        }
+
+        return false;
     }
 }

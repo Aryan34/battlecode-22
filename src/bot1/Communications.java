@@ -4,9 +4,11 @@ import battlecode.common.*;
 
 public class Communications {
     RobotController rc;
+    Robot robot;
 
-    Communications(RobotController rc) {
+    Communications(RobotController rc, Robot robot) {
         this.rc = rc;
+        this.robot = robot;
     }
 
     void addFriendlyArchonLoc(MapLocation loc) throws GameActionException {
