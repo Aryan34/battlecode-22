@@ -115,29 +115,24 @@ public class Communications {
         }
     }
 
-    void getRobotCount(RobotType type) throws GameActionException {
+    int getRobotCount(RobotType type) throws GameActionException {
         switch (type) {
             case ARCHON:
-                rc.readSharedArray(8);
-                break;
+                return rc.readSharedArray(8);
             case LABORATORY:
-                rc.readSharedArray(9);
-                break;
+                return rc.readSharedArray(9);
             case WATCHTOWER:
-                rc.readSharedArray(10);
-                break;
+                return rc.readSharedArray(10);
             case MINER:
-                rc.readSharedArray(11);
-                break;
+                return rc.readSharedArray(11);
             case BUILDER:
-                rc.readSharedArray(12);
-                break;
+                return rc.readSharedArray(12);
             case SOLDIER:
-                rc.readSharedArray(13);
-                break;
+                return rc.readSharedArray(13);
             case SAGE:
-                rc.readSharedArray(14);
-                break;
+                return rc.readSharedArray(14);
+            default:
+                return 0;
         }
     }
 }

@@ -2,7 +2,7 @@ package bot1;
 
 import battlecode.common.*;
 
-public class Sage extends Droid {
+public class Sage extends Robot {
     enum Mode {
         ATTACK,
         DEFEND
@@ -16,6 +16,8 @@ public class Sage extends Droid {
     }
 
     void playTurn() throws GameActionException {
+        super.playTurn();
+
         switch (mode) {
             case ATTACK:
                 attack();

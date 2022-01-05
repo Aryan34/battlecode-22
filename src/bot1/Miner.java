@@ -2,31 +2,36 @@ package bot1;
 
 import battlecode.common.*;
 
-public class Miner extends Droid {
+public class Miner extends Robot {
     MapLocation depositLoc = null;
+
+    int leadCount;
 
     public Miner(RobotController rc) {
         super(rc);
+        leadCount = 0;
     }
 
     void playTurn() throws GameActionException {
-        if (depositLoc == null) {
-            findDeposit();
-        } else if (myLoc.distanceSquaredTo(depositLoc) > myType.actionRadiusSquared) {
-            nav.moveTowards(depositLoc);
-        } else {
-            MapLocation me = rc.getLocation();
+        super.playTurn();
+
+        leadCount = rc.senseLead(myLoc);
+        if (leadCount != 0){
             for (int dx = -1; dx <= 1; dx++) {
                 for (int dy = -1; dy <= 1; dy++) {
-                    MapLocation mineLocation = new MapLocation(me.x + dx, me.y + dy);
-                    while (rc.canMineGold(mineLocation)) {
+                    MapLocation mineLocation = new MapLocation(myLoc.x + dx, myLoc.y + dy);
+                    while (rc.canMineGold(mineLocation) && rc.senseGold(mineLocation)>1) {
                         rc.mineGold(mineLocation);
                     }
-                    while (rc.canMineLead(mineLocation)) {
+                    while (rc.canMineLead(mineLocation) && rc.senseLead(mineLocation)>1) {
                         rc.mineLead(mineLocation);
                     }
                 }
             }
+        }
+
+        if (leadCount < 2){
+            nav.moveRandom();
         }
     }
 

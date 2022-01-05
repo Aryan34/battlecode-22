@@ -2,7 +2,7 @@ package bot1;
 
 import battlecode.common.*;
 
-public class Soldier extends Droid {
+public class Soldier extends Robot {
     enum Mode {
         SCOUT,
         ATTACK,
@@ -17,6 +17,8 @@ public class Soldier extends Droid {
     }
 
     void playTurn() throws GameActionException {
+        super.playTurn();
+
         switch (mode) {
             case SCOUT:
                 scout();
@@ -31,7 +33,7 @@ public class Soldier extends Droid {
     }
 
     void scout() throws GameActionException {
-        nav.brownian();
+        nav.moveRandom();
 
         // still have more enemy archons to find
         if (comms.getDetectedEnemyArchonCount() < comms.getArchonCount()) {

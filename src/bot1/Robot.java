@@ -14,6 +14,10 @@ public class Robot {
     static int turnCount;
     static final Random rng = new Random(6147);
 
+    static int targetx = -1;
+    static int targety = -1;
+    static int randnum = -1;
+
     MapLocation myLoc;
     RobotType myType;
     Team myTeam, opponentTeam;

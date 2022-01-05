@@ -2,7 +2,7 @@ package bot1;
 
 import battlecode.common.*;
 
-public class Watchtower extends Building {
+public class Watchtower extends Robot {
     enum DefenseMode {
         DISTANCE,
         HEALTH
@@ -23,6 +23,8 @@ public class Watchtower extends Building {
     }
 
     void playTurn() throws GameActionException {
+        super.playTurn();
+
         MapLocation attackLoc = null;
         switch (mode) {
             case DISTANCE:
