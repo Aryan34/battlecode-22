@@ -152,24 +152,33 @@ public strictfp class RobotPlayer {
                 rc.buildRobot(RobotType.BUILDER, dir);
             }
         }
-        else if (rn<180){
+        else if (rn<200){
             // Let's try to build a soldier.
             rc.setIndicatorString("Trying to build a soldier");
             if (rc.canBuildRobot(RobotType.SOLDIER, dir)) {
                 rc.buildRobot(RobotType.SOLDIER, dir);
             }
         }
-        else if (rc.getTeamLeadAmount(rc.getTeam())>1000) {
-            rc.setIndicatorString("Trying to build a soldier");
-            if (rc.canBuildRobot(RobotType.SOLDIER, dir)) {
-                rc.buildRobot(RobotType.SOLDIER, dir);
+        else if (rc.getTeamLeadAmount(rc.getTeam())<5000) {
+            // Let's try to build a miner.
+            rc.setIndicatorString("Trying to build a miner");
+            if (rc.canBuildRobot(RobotType.MINER, dir)) {
+                rc.buildRobot(RobotType.MINER, dir);
             }
         }
         else {
-            // Let's try to build a soldier.
-            rc.setIndicatorString("Trying to build a sage"+rn);
-            if (rc.canBuildRobot(RobotType.SAGE, dir)) {
-                rc.buildRobot(RobotType.SAGE, dir);
+            if (rng.nextBoolean() && rn<1800) {
+                // Let's try to build a miner.
+                rc.setIndicatorString("Trying to build a sage");
+                if (rc.canBuildRobot(RobotType.SAGE, dir)) {
+                    rc.buildRobot(RobotType.SAGE, dir);
+                }
+            } else {
+                // Let's try to build a soldier.
+                rc.setIndicatorString("Trying to build a soldier");
+                if (rc.canBuildRobot(RobotType.SOLDIER, dir)) {
+                    rc.buildRobot(RobotType.SOLDIER, dir);
+                }
             }
         }
     }
@@ -197,10 +206,10 @@ public strictfp class RobotPlayer {
                     //     bestx = dx;
                     //     besty = dy;
                     // }
-                    while (rc.canMineGold(mineLocation)) {
+                    while (rc.canMineGold(mineLocation) && rc.senseGold(mineLocation)>1) {
                         rc.mineGold(mineLocation);
                     }
-                    while (rc.canMineLead(mineLocation)) {
+                    while (rc.canMineLead(mineLocation) && rc.senseLead(mineLocation)>1) {
                         rc.mineLead(mineLocation);
                     }
                 }
@@ -248,7 +257,7 @@ public strictfp class RobotPlayer {
         //     System.out.println("I moved!");
         // }
     //else if (stay){
-        if (count==0){
+        if (count<2){
             Direction dir2 = directions[rng.nextInt(directions.length)];
             if (rc.canMove(dir2)) {
                 rc.move(dir2);
@@ -304,15 +313,17 @@ public strictfp class RobotPlayer {
         // Also try to move randomly.
         MapLocation temp = new MapLocation(targetx, targety);
         Direction dir = rc.getLocation().directionTo(temp);
-        if (rc.canMove(dir)) {
-            rc.move(dir);
-            //System.out.println("I moved!");
-        }
-        else {
-            dir = directions[rng.nextInt(directions.length)] ;
+        if (rc.senseNearbyRobots(radius, rc.getTeam()).length>7){
             if (rc.canMove(dir)) {
                 rc.move(dir);
                 //System.out.println("I moved!");
+            }
+            else {
+                dir = directions[rng.nextInt(directions.length)] ;
+                if (rc.canMove(dir)) {
+                    rc.move(dir);
+                    //System.out.println("I moved!");
+                }
             }
         }
     }
@@ -384,26 +395,60 @@ public strictfp class RobotPlayer {
 
     static void runSage(RobotController rc) throws GameActionException {
         // Try to attack someone
-        int radius = rc.getType().actionRadiusSquared;
-        Team opponent = rc.getTeam().opponent();
-        RobotInfo[] enemies = rc.senseNearbyRobots(radius, opponent);
-        if (enemies.length > 0) {
-            MapLocation toAttack = enemies[0].location;
-            if (rc.canAttack(toAttack)) {
-                rc.attack(toAttack);
+        rc.setIndicatorString(""+targetx+" "+targety+" "+randnum);
+        if(targetx==-1 || targety==-1 || (rc.canSenseRobotAtLocation(new MapLocation(targetx, targety)) && rc.senseRobotAtLocation(new MapLocation(targetx, targety)).type!=RobotType.ARCHON)){
+            int r = 0;
+            if (randnum==-1){
+                r = rng.nextInt(3);
+                randnum = r;
+            }
+            else {
+                r = (randnum+1)%3;
+                randnum = r;
+            }
+            
+            if (r==0){
+                targetx = rc.getMapWidth()-rc.readSharedArray(10);
+                targety = rc.getMapHeight()-rc.readSharedArray(11);
+            }
+            else if (r==1){
+                targetx = rc.getMapWidth()-rc.readSharedArray(10);
+                targety = rc.readSharedArray(11);
+            }
+            else {
+                targetx = rc.readSharedArray(10);
+                targety = rc.getMapHeight()-rc.readSharedArray(11);
             }
         }
 
+        int radius = rc.getType().actionRadiusSquared;
+        Team opponent = rc.getTeam().opponent();
+        RobotInfo[] enemies = rc.senseNearbyRobots(radius, opponent);
+        if (enemies.length > 8 || rc.getHealth()<50) {
+            MapLocation toAttack = enemies[0].location;
+            if (rc.canEnvision(AnomalyType.CHARGE)) {
+                rc.envision(AnomalyType.CHARGE);
+            }
+        }
+        
         // Also try to move randomly.
-        Direction dir = directions[rng.nextInt(directions.length)];
+        MapLocation temp = new MapLocation(targetx, targety);
+        Direction dir = rc.getLocation().directionTo(temp);
         if (rc.canMove(dir)) {
             rc.move(dir);
-            System.out.println("I moved!");
+            //System.out.println("I moved!");
+        }
+        else {
+            dir = directions[rng.nextInt(directions.length)] ;
+            if (rc.canMove(dir)) {
+                rc.move(dir);
+                //System.out.println("I moved!");
+            }
         }
     }
 
     static void runLab(RobotController rc) throws GameActionException {
-        if (rc.isActionReady()){
+        if (rc.getTeamLeadAmount(rc.getTeam())>1000 && rc.isActionReady()){
             rc.transmute();
         }
     }
