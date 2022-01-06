@@ -68,6 +68,17 @@ public class Navigation {
         return false;
     }
 
+    boolean moveRandomCardinal() throws GameActionException {
+        Direction dir = cardinalDirections[Robot.rng.nextInt(cardinalDirections.length)];
+        if (rc.canMove(dir)) {
+            rc.move(dir);
+            System.out.println("I moved!");
+            return true;
+        }
+
+        return false;
+    }
+
     boolean moveTowards(MapLocation loc) throws GameActionException {
         Direction dir = robot.myLoc.directionTo(loc);
         if (rc.canMove(dir)) {

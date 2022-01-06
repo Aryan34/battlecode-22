@@ -15,49 +15,60 @@ public class Builder extends Robot {
     boolean dontMove = false;
     boolean buildLattice = false;
 
+    MapLocation parentArchonLoc;
+    MapLocation repairTarget;
+
     public Builder(RobotController rc) {
         super(rc);
-        mode = Mode.MOVE;
+        mode = Mode.BUILD_LATTICE;
+        for (RobotInfo info : rc.senseNearbyRobots(2, myTeam)) {
+            if (info.type == RobotType.ARCHON) {
+                parentArchonLoc = info.location;
+                break;
+            }
+        }
     }
 
     void playTurn() throws GameActionException {
         super.playTurn();
 
-        for (RobotInfo robotInfo : rc.senseNearbyRobots(RobotType.BUILDER.actionRadiusSquared, myTeam)) {
-            if (robotInfo.type == RobotType.ARCHON) {
-                buildLattice = true;
-            }
-            if (robotInfo.type == RobotType.WATCHTOWER || robotInfo.type == RobotType.LABORATORY) {
-                if (robotInfo.health < robotInfo.type.health && rc.canRepair(robotInfo.location)) {
-                    rc.repair(robotInfo.location);
-                    dontMove = true;
-                }
-                if (robotInfo.level < 3 && rc.canMutate(robotInfo.location)) {
-                    rc.mutate(robotInfo.location);
-                    dontMove = true;
-                }
-            }
+        switch (mode) {
+            case BUILD_LATTICE:
+                buildLattice();
+                break;
+            case REPAIR:
+                repair();
+                break;
+            default:
+                nav.moveRandom();
+        }
+    }
+
+    void repair() throws GameActionException {
+        if (repairTarget != null && rc.canRepair(repairTarget)) {
+            rc.repair(repairTarget);
         }
 
-        if (buildLattice) {
-            for (int i = 0; i < Navigation.directions.length; i++) {
-                Direction dir = Navigation.directions[i];
+        RobotInfo info = rc.senseRobotAtLocation(repairTarget);
+        if (info.health == info.type.health) {
+            mode = Mode.BUILD_LATTICE;
+            repairTarget = null;
+        }
+    }
+
+    void buildLattice() throws GameActionException {
+        if ((myLoc.x - parentArchonLoc.x) % LATTICE_MOD == 0 && (myLoc.y - parentArchonLoc.y) % LATTICE_MOD == 0) {
+            nav.moveRandomCardinal();
+        }
+        if ((myLoc.x - parentArchonLoc.x) % LATTICE_MOD != 0 || (myLoc.y - parentArchonLoc.y) % LATTICE_MOD != 0) {
+            for (Direction dir : Navigation.cardinalDirections) {
                 if (rc.canBuildRobot(RobotType.WATCHTOWER, dir)) {
-                    if ((myLoc.x + dir.dx) % 2 == (myLoc.y + dir.dy) % 2) {
-                        rc.buildRobot(RobotType.WATCHTOWER, dir);
-                        comms.updateRobotCount(RobotType.WATCHTOWER, 1);
-                        break;
-                    } else if (comms.getRobotCount(RobotType.LABORATORY) == 0) {
-                        rc.buildRobot(RobotType.LABORATORY, dir);
-                        comms.updateRobotCount(RobotType.LABORATORY, 1);
-                        break;
-                    }
+                    rc.buildRobot(RobotType.WATCHTOWER, dir);
+                    mode = Mode.REPAIR;
+                    repairTarget = myLoc.add(dir);
+                    break;
                 }
             }
-        }
-
-        if (!dontMove) {
-            nav.moveRandom();
         }
     }
 }

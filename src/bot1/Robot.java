@@ -12,11 +12,10 @@ public class Robot {
 
     static int roundNum;
     static int turnCount;
-    static final Random rng = new Random(6147);
+    boolean considerDead;
 
-    static int targetx = -1;
-    static int targety = -1;
-    static int randnum = -1;
+    static final Random rng = new Random(6147);
+    static final int LATTICE_MOD = 2;
 
     MapLocation myLoc;
     RobotType myType;
@@ -30,6 +29,7 @@ public class Robot {
 
         roundNum = rc.getRoundNum();
         turnCount = 0;
+        considerDead = false;
 
         myLoc = rc.getLocation();
         myType = rc.getType();
@@ -40,6 +40,15 @@ public class Robot {
     void playTurn() throws GameActionException {
         roundNum = rc.getRoundNum();
         myLoc = rc.getLocation();
+
+        if (!considerDead && rc.getHealth() < 6) {
+            considerDead = true;
+            comms.updateRobotCount(myType, -1);
+        } else if (considerDead && rc.getHealth() >= 6) {
+            considerDead = false;
+            comms.updateRobotCount(myType, 1);
+        }
+
         ++turnCount;
     }
 }

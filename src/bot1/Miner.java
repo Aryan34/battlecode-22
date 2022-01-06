@@ -15,23 +15,20 @@ public class Miner extends Robot {
     void playTurn() throws GameActionException {
         super.playTurn();
 
-        leadCount = rc.senseLead(myLoc);
-        if (leadCount != 0){
-            for (int dx = -1; dx <= 1; dx++) {
-                for (int dy = -1; dy <= 1; dy++) {
-                    MapLocation mineLocation = new MapLocation(myLoc.x + dx, myLoc.y + dy);
-                    while (rc.canMineGold(mineLocation) && rc.senseGold(mineLocation)>1) {
-                        rc.mineGold(mineLocation);
-                    }
-                    while (rc.canMineLead(mineLocation) && rc.senseLead(mineLocation)>1) {
-                        rc.mineLead(mineLocation);
-                    }
-                }
+        if (depositLoc == null) {
+            findDeposit();
+            if (depositLoc == null) {
+                nav.moveRandom();
             }
-        }
-
-        if (leadCount < 2){
+        } else if (myLoc.distanceSquaredTo(depositLoc) > RobotType.MINER.actionRadiusSquared){
+            nav.moveTowards(depositLoc);
+        } else if (rc.senseLead(depositLoc) == 0) {
+            depositLoc = null;
             nav.moveRandom();
+        } else {
+            while (rc.senseLead(depositLoc) > 0 && rc.canMineLead(depositLoc)) {
+                rc.mineLead(depositLoc);
+            }
         }
     }
 
