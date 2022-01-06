@@ -16,13 +16,17 @@ public class Miner extends Robot {
         super.playTurn();
 
         if (depositLoc == null) {
-            findDeposit();
-            if (depositLoc == null) {
+            if (!findOptimalDeposit()) {
                 nav.moveRandom();
+            } else {
+                comms.addLeadDepositLoc(depositLoc);
             }
-        } else if (myLoc.distanceSquaredTo(depositLoc) > RobotType.MINER.actionRadiusSquared){
+        }
+
+        if (myLoc.distanceSquaredTo(depositLoc) > RobotType.MINER.actionRadiusSquared){
             nav.moveTowards(depositLoc);
         } else if (rc.senseLead(depositLoc) == 0) {
+            comms.removeLeadDepositLoc(depositLoc);
             depositLoc = null;
             nav.moveRandom();
         } else {
@@ -32,16 +36,29 @@ public class Miner extends Robot {
         }
     }
 
-    boolean findDeposit() throws GameActionException {
-        int largestDeposit = 0;
-        for (MapLocation loc : rc.getAllLocationsWithinRadiusSquared(myLoc, myType.visionRadiusSquared)) {
-            if (rc.senseLead(loc) > largestDeposit) {
-                largestDeposit = rc.senseLead(loc);
+    boolean findOptimalDeposit() throws GameActionException {
+        int optimalDepositValue = 0;
+        for (MapLocation loc : rc.senseNearbyLocationsWithLead(RobotType.MINER.visionRadiusSquared)) {
+            int value = rc.senseLead(loc) - (2 * myLoc.distanceSquaredTo(loc));
+            if (value > optimalDepositValue) {
+                optimalDepositValue = value;
                 depositLoc = loc;
-                return true;
             }
         }
 
-        return false;
+        if (optimalDepositValue == 0) {
+            MapLocation[] depositLocs = comms.getLeadDepositLocs();
+            for (MapLocation loc : depositLocs) {
+                if (loc != null) {
+                    if (depositLoc == null) {
+                        depositLoc = loc;
+                    } else if (myLoc.distanceSquaredTo(loc) < myLoc.distanceSquaredTo(depositLoc)){
+                        depositLoc = loc;
+                    }
+                }
+            }
+        }
+
+        return depositLoc != null;
     }
 }

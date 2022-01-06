@@ -33,10 +33,20 @@ public class Communications {
         return count;
     }
 
-    void addFriendlyArchonLoc(MapLocation loc) throws GameActionException {
+    int encodeLocation(MapLocation loc) {
         int x = loc.x + 1;
         int y = loc.y + 1;
-        int value = x + (y << 7);
+        return x + (y << 7);
+    }
+
+    MapLocation decodeLocation(int value) {
+        int x = value & 0b1111111;
+        int y = (value >> 7) & 0b1111111;
+        return new MapLocation(x, y);
+    }
+
+    void addFriendlyArchonLoc(MapLocation loc) throws GameActionException {
+        int value = encodeLocation(loc);
         for (int i = 0; i < 4; ++i) {
             if (rc.readSharedArray(i) == 0) {
                 rc.writeSharedArray(i, value);
@@ -47,9 +57,7 @@ public class Communications {
     }
 
     void addEnemyArchonLoc(MapLocation loc) throws GameActionException {
-        int x = loc.x + 1;
-        int y = loc.y + 1;
-        int value = x + (y << 7);
+        int value = encodeLocation(loc);
         for (int i = 4; i < 8; ++i) {
             if (rc.readSharedArray(i) == 0) {
                 rc.writeSharedArray(i, value);
@@ -64,9 +72,7 @@ public class Communications {
         for (int i = 0; i < 4; ++i) {
             int value = rc.readSharedArray(i);
             if (value != 0) {
-                int x = value & 0b1111111;
-                int y = (value >> 7) & 0b1111111;
-                MapLocation loc = new MapLocation(x, y);
+                MapLocation loc = decodeLocation(value);
                 locs[i] = loc;
             }
         }
@@ -79,9 +85,7 @@ public class Communications {
         for (int i = 4; i < 8; ++i) {
             int value = rc.readSharedArray(i);
             if (value != 0) {
-                int x = value & 0b1111111;
-                int y = (value >> 7) & 0b1111111;
-                MapLocation loc = new MapLocation(x, y);
+                MapLocation loc = decodeLocation(value);
                 locs[i - 4] = loc;
             }
         }
@@ -134,5 +138,41 @@ public class Communications {
             default:
                 return 0;
         }
+    }
+
+    void addLeadDepositLoc(MapLocation loc) throws GameActionException {
+        int value = encodeLocation(loc);
+        for (int i = 15; i < 25; ++i) {
+            if (rc.readSharedArray(i) == 0) {
+                rc.writeSharedArray(i, value);
+                return;
+            } else if (decodeLocation(rc.readSharedArray(i)).distanceSquaredTo(loc) < 2) {
+                return;
+            }
+        }
+    }
+
+    void removeLeadDepositLoc(MapLocation loc) throws GameActionException {
+        int value = encodeLocation(loc);
+        for (int i = 15; i < 25; ++i) {
+            if (rc.readSharedArray(i) == value) {
+                rc.writeSharedArray(i, 0);
+                return;
+            }
+        }
+    }
+
+    MapLocation[] getLeadDepositLocs() throws GameActionException {
+        MapLocation[] locations = new MapLocation[10];
+        for (int i = 15; i < 25; ++i) {
+            int value = rc.readSharedArray(i);
+            if (value == 0) {
+                locations[i - 15] = null;
+            } else {
+                locations[i - 15] = decodeLocation(value);
+            }
+        }
+
+        return locations;
     }
 }

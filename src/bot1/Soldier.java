@@ -48,14 +48,10 @@ public class Soldier extends Robot {
     }
 
     void attack() throws GameActionException {
-        MapLocation attackLoc = util.lowestHealthAttackTarget();
-        if (rc.canAttack(attackLoc)) {
-            rc.attack(attackLoc);
-        }
         nav.moveRandom();
     }
 
-    void defend() {
-
+    void defend() throws GameActionException {
+        nav.moveRandom();
     }
 }
