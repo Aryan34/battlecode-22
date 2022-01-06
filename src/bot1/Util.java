@@ -1,9 +1,6 @@
 package bot1;
 
-import battlecode.common.GameActionException;
-import battlecode.common.MapLocation;
-import battlecode.common.RobotController;
-import battlecode.common.RobotInfo;
+import battlecode.common.*;
 
 public class Util {
     RobotController rc;
@@ -12,6 +9,37 @@ public class Util {
     Util(RobotController rc, Robot robot) {
         this.rc = rc;
         this.robot = robot;
+    }
+
+    boolean tryBuild(RobotType type, Direction dir) throws GameActionException {
+        if (rc.canBuildRobot(type, dir)) {
+            rc.buildRobot(type, dir);
+        } else {
+            for (Direction closeDir : Navigation.closeDirections(dir)) {
+                if (rc.canBuildRobot(type, closeDir)) {
+                    rc.buildRobot(type, closeDir);
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    boolean tryBuildRandom(RobotType type) throws GameActionException {
+        Direction dir = Navigation.directions[Robot.rng.nextInt(Navigation.directions.length)];
+        if (rc.canBuildRobot(type, dir)) {
+            rc.buildRobot(type, dir);
+        } else {
+            for (Direction closeDir : Navigation.closeDirections(dir)) {
+                if (rc.canBuildRobot(type, closeDir)) {
+                    rc.buildRobot(type, closeDir);
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 
     MapLocation closestFriendlyArchon() throws GameActionException {

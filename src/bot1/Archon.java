@@ -3,70 +3,200 @@ package bot1;
 import battlecode.common.*;
 
 public class Archon extends Robot {
-    int buildOrderIndex = 0;
-
-    public Archon(RobotController rc) throws GameActionException {
-        super(rc);
-        comms.addFriendlyArchonLoc(rc.getLocation());
-    }
-
-    static RobotType[] firstBuildOrder = {
-            RobotType.MINER,
-            RobotType.MINER,
-            RobotType.MINER,
-            RobotType.MINER,
-            RobotType.MINER,
+    static RobotType[] buildOrder1 = {
             RobotType.SOLDIER,
             RobotType.SOLDIER,
             RobotType.MINER,
             RobotType.SOLDIER,
             RobotType.SOLDIER,
             RobotType.MINER,
-            RobotType.BUILDER,
-            RobotType.BUILDER,
-            RobotType.MINER,
-            RobotType.BUILDER,
-            RobotType.BUILDER,
-            RobotType.MINER,
-            RobotType.BUILDER,
+            RobotType.SOLDIER,
+            RobotType.SOLDIER,
             RobotType.MINER,
             RobotType.SOLDIER
     };
 
+    static RobotType[] buildOrder2 = {
+            RobotType.MINER,
+            RobotType.MINER,
+            RobotType.MINER,
+            RobotType.SOLDIER,
+            RobotType.MINER,
+            RobotType.MINER,
+            RobotType.MINER,
+            RobotType.SOLDIER,
+            RobotType.MINER,
+            RobotType.SOLDIER
+    };
+
+    static RobotType[] buildOrder3 = {
+            RobotType.MINER,
+            RobotType.MINER,
+            RobotType.SOLDIER,
+            RobotType.SOLDIER,
+            RobotType.SOLDIER,
+            RobotType.MINER,
+            RobotType.MINER,
+            RobotType.SOLDIER,
+            RobotType.SOLDIER,
+            RobotType.MINER
+    };
+
+    int buildIndex;
+
+    int enemySoldierSensedRound;
+    int weightedThreatCount;
+    boolean enemySoldierSensed;
+
+    int buildersSpawned;
+    int minersSpawned;
+    int soldiersSpawned;
+
+    RobotType[] recentlySpawned = new RobotType[5];
+
+    public Archon(RobotController rc) throws GameActionException {
+        super(rc);
+        comms.addFriendlyArchonLoc(rc.getLocation());
+
+        buildIndex = 0;
+
+        enemySoldierSensedRound = -10000;
+        weightedThreatCount = 0;
+        enemySoldierSensed = false;
+
+        buildersSpawned = 0;
+        minersSpawned = 0;
+        soldiersSpawned = 0;
+    }
+
     void playTurn() throws GameActionException {
         super.playTurn();
 
-        // Pick a direction to build in.
-        Direction dir = Navigation.directions[rng.nextInt(Navigation.directions.length)];
-        if (roundNum < 20) {
-            spawnFirst20Rounds();
+        weightedThreatCount = countThreatsWeighted();
+        if (weightedThreatCount > 0) {
+            enemySoldierSensed = true;
+            enemySoldierSensedRound = roundNum;
         } else {
-            if (rng.nextBoolean()) {
-                if (rng.nextBoolean()) {
-                    rc.setIndicatorString("Trying to build a miner");
-                    if (rc.canBuildRobot(RobotType.MINER, dir)) {
-                        rc.buildRobot(RobotType.MINER, dir);
-                    }
-                } else {
-                    rc.setIndicatorString("Trying to build a builder");
-                    if (rc.canBuildRobot(RobotType.BUILDER, dir)) {
-                        rc.buildRobot(RobotType.BUILDER, dir);
-                    }
-                }
+            enemySoldierSensed = false;
+        }
+
+        rc.setIndicatorString("VAL: " + String.valueOf(buildIndex));
+        if (enemySoldierSensed) {
+            rc.setIndicatorString("Case: Enemy");
+            followBuildOrder(buildOrder1);
+        } else if (buildIndex < 20) {
+            followBuildOrder(buildOrder2);
+        } else if (buildIndex < 200) {
+            rc.setIndicatorString("Case: 200");
+            followBuildOrder(buildOrder3);
+        } else if (buildIndex < 300) {
+            rc.setIndicatorString("Case: 300");
+            followBuildOrder(buildOrder1);
+        } else if (buildIndex < 400) {
+            rc.setIndicatorString("Case: 400");
+            if (buildersSpawned < 5) {
+//                if (util.tryBuildRandom(RobotType.BUILDER)) {
+//                    ++buildersSpawned;
+//                }
+                buildersSpawned++;
             } else {
-                rc.setIndicatorString("Trying to build a soldier");
-                if (rc.canBuildRobot(RobotType.SOLDIER, dir)) {
-                    rc.buildRobot(RobotType.SOLDIER, dir);
-                }
+                followBuildOrder(buildOrder3);
+            }
+        } else {
+            rc.setIndicatorString("Case: ELSE");
+            if (rc.getTeamGoldAmount(myTeam) > RobotType.SAGE.buildCostGold * 1.5) {
+                util.tryBuildRandom(RobotType.SAGE);
+            } else {
+                followBuildOrder(buildOrder1);
             }
         }
     }
 
-    void spawnFirst20Rounds() throws GameActionException {
-        Direction dir = Navigation.directions[rng.nextInt(Navigation.directions.length)];
-        if (rc.canBuildRobot(firstBuildOrder[buildOrderIndex], dir)) {
-            rc.buildRobot(firstBuildOrder[buildOrderIndex], dir);
-            ++buildOrderIndex;
+    void followBuildOrder(RobotType[] buildOrder) throws GameActionException {
+        if (tryBuild(buildOrder[buildIndex % 10])) {
+            ++buildIndex;
         }
+    }
+
+    boolean tryBuild(RobotType type) throws GameActionException {
+        Direction dir = Navigation.directions[Robot.rng.nextInt(Navigation.directions.length)];
+        if (type == RobotType.MINER) {
+            dir = findBestLeadDeposit();
+        }
+
+        if (rc.canBuildRobot(type, dir)) {
+            rc.buildRobot(type, dir);
+            return true;
+        } else {
+            for (Direction closeDir : Navigation.closeDirections(dir)) {
+                if (rc.canBuildRobot(type, closeDir)) {
+                    rc.buildRobot(type, closeDir);
+                    updateRecentlySpawned(type);
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    int countThreatsWeighted() {
+        int weightedThreatCount = 0;
+        for (RobotInfo info : rc.senseNearbyRobots(myType.visionRadiusSquared, opponentTeam)) {
+            switch (info.type) {
+                case SOLDIER:
+                    weightedThreatCount += 1;
+                    break;
+                case SAGE:
+                    weightedThreatCount += 10;
+                    break;
+                case WATCHTOWER:
+                    weightedThreatCount += 5;
+                    break;
+                default:
+                    break;
+            }
+        }
+
+        return weightedThreatCount;
+    }
+
+    void updateRecentlySpawned(RobotType type) {
+        for (int i = 0; i < recentlySpawned.length; ++i) {
+            if (recentlySpawned[i] == null) {
+                recentlySpawned[i] = type;
+                return;
+            }
+        }
+
+        for (int i = 0; i < recentlySpawned.length - 1; ++i) {
+            recentlySpawned[i] = recentlySpawned[i + 1];
+        }
+        recentlySpawned[recentlySpawned.length - 1] = type;
+    }
+
+    int countLastNSpawned(RobotType type, int lastN) {
+        int count = 0;
+        for (int i = 0; i < lastN; ++i) {
+            if (recentlySpawned[recentlySpawned.length - 1 - i] == type) {
+                ++count;
+            }
+        }
+
+        return count;
+    }
+
+    Direction findBestLeadDeposit() throws GameActionException {
+        int leadCount = 0;
+        Direction dir = Navigation.directions[Robot.rng.nextInt(Navigation.directions.length)];
+
+        for (MapLocation loc : rc.senseNearbyLocationsWithLead(myType.visionRadiusSquared)) {
+            if (rc.senseLead(loc) > leadCount) {
+                leadCount = rc.senseLead(loc);
+                dir = myLoc.directionTo(loc);
+            }
+        }
+
+        return dir;
     }
 }
