@@ -50,13 +50,11 @@ public class Navigation {
     static final int RECENTLY_VISITED_THRESHOLD = 10;
 
     RobotController rc;
-    Robot robot;
 
     int[][] visited = new int[GameConstants.MAP_MAX_HEIGHT][GameConstants.MAP_MAX_WIDTH];
 
     Navigation(RobotController rc, Robot robot) {
         this.rc = rc;
-        this.robot = robot;
     }
 
     boolean moveRandom() throws GameActionException {
@@ -64,7 +62,7 @@ public class Navigation {
         int randY = (Robot.rng.nextInt(rc.getMapHeight()));
 
         MapLocation randLoc = new MapLocation(randX, randY);
-        Direction randDir = robot.myLoc.directionTo(randLoc);
+        Direction randDir = rc.getLocation().directionTo(randLoc);
 
         if (rc.canMove(randDir)) {
             rc.setIndicatorString("Moved random to: " + randX + ", " + randY);
@@ -86,25 +84,25 @@ public class Navigation {
     }
 
     boolean moveTowards(MapLocation loc) throws GameActionException {
-        if (!greedy(loc)) {
-            rc.setIndicatorString("STUCKKKK");
-            return false;
-        }
-        rc.setIndicatorString("Target: " + loc.x + ", " + loc.y);
-        return true;
+        return greedy(loc);
     }
 
     // treat all rubble above threshold as impassable, otherwise move towards target
     // greedily -> choose lowest rubble neighbor tile that doesn't go backwards
     // [directionToTarget.opposite, directionToTarget.opposite.{rotateRight, rotateLeft}]
     boolean greedy(MapLocation target) throws GameActionException {
+        int currDist = rc.getLocation().distanceSquaredTo(target);
+        int bestDist = 10000000;
         int minRubbleTile = GameConstants.MAX_RUBBLE;
         Direction bestDir = null;
 
-        for (Direction dir : directions) {
-            if (robot.myLoc.add(dir).distanceSquaredTo(target) < robot.myLoc.distanceSquaredTo(target)) {
-                if (rc.senseRubble(robot.myLoc.add(dir)) < minRubbleTile) {
-                    minRubbleTile = rc.senseRubble(robot.myLoc.add(dir));
+        for (Direction dir : closeDirections(rc.getLocation().directionTo(target))) {
+            int newDist = rc.getLocation().add(dir).distanceSquaredTo(target);
+            if (rc.canMove(dir) && newDist < currDist) {
+                if (bestDir == null || rc.senseRubble(rc.getLocation().add(dir)) < minRubbleTile
+                || (rc.senseRubble(rc.getLocation().add(dir)) == minRubbleTile && newDist < bestDist)) {
+                    bestDist = newDist;
+                    minRubbleTile = rc.senseRubble(rc.getLocation().add(dir));
                     bestDir = dir;
                 }
             }
@@ -114,7 +112,6 @@ public class Navigation {
             rc.move(bestDir);
             return true;
         }
-
         return false;
     }
 }
