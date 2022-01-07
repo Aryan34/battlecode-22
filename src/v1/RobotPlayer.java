@@ -215,6 +215,9 @@ public strictfp class RobotPlayer {
                 }
             }
         }
+        else {
+            rc.disintegrate();
+        }
        
         // Direction dir = directions[0];
         // boolean stay = false;
@@ -287,16 +290,16 @@ public strictfp class RobotPlayer {
             }
             
             if (r==0){
-                targetx = rc.getMapWidth()-rc.readSharedArray(10);
-                targety = rc.getMapHeight()-rc.readSharedArray(11);
+                targetx = rc.getMapWidth()-rc.readSharedArray(10)-1;
+                targety = rc.getMapHeight()-rc.readSharedArray(11)-1;
             }
             else if (r==1){
-                targetx = rc.getMapWidth()-rc.readSharedArray(10);
+                targetx = rc.getMapWidth()-rc.readSharedArray(10)-1;
                 targety = rc.readSharedArray(11);
             }
             else {
                 targetx = rc.readSharedArray(10);
-                targety = rc.getMapHeight()-rc.readSharedArray(11);
+                targety = rc.getMapHeight()-rc.readSharedArray(11)-1;
             }
         }
 
@@ -346,7 +349,9 @@ public strictfp class RobotPlayer {
         MapLocation me = rc.getLocation();
         boolean cont = false;
         boolean dontmove = false;
-        RobotInfo[] li = rc.senseNearbyRobots(8);
+        RobotInfo[] li = rc.senseNearbyRobots();
+        int count = 0;
+        boolean maketower = true;
         for (int a=0; a<li.length; a++){
             if (li[a].type == RobotType.ARCHON){
                 cont = true;
@@ -361,7 +366,12 @@ public strictfp class RobotPlayer {
                     rc.mutate(li[a].location);
                     dontmove = true;
                 }
-                
+            }
+            if (rc.getTeam()==li[a].team && !(li[a].type == RobotType.WATCHTOWER || li[a].type == RobotType.LABORATORY)){
+                count++;
+            }
+            if (li[a].type == RobotType.WATCHTOWER && rc.getTeam()==li[a].team){
+                maketower = false;
             }
         }
 
@@ -383,10 +393,17 @@ public strictfp class RobotPlayer {
                     
                 }
             }
+        } else if (count>3 && maketower){
+            Direction dirt = directions[rng.nextInt(directions.length)];
+            if (rc.canBuildRobot(RobotType.WATCHTOWER, dirt)){
+                rc.buildRobot(RobotType.WATCHTOWER, dirt);
+            }
         }
 
+
+
         // Also try to move randomly.
-        Direction dir2 = modded[rng.nextInt(modded.length)];
+        Direction dir2 = directions[rng.nextInt(directions.length)];
         if (!dontmove && rc.canMove(dir2)) {
             rc.move(dir2);
             System.out.println("I moved!");
@@ -408,16 +425,16 @@ public strictfp class RobotPlayer {
             }
             
             if (r==0){
-                targetx = rc.getMapWidth()-rc.readSharedArray(10);
-                targety = rc.getMapHeight()-rc.readSharedArray(11);
+                targetx = rc.getMapWidth()-rc.readSharedArray(10)-1;
+                targety = rc.getMapHeight()-rc.readSharedArray(11)-1;
             }
             else if (r==1){
-                targetx = rc.getMapWidth()-rc.readSharedArray(10);
+                targetx = rc.getMapWidth()-rc.readSharedArray(10)-1;
                 targety = rc.readSharedArray(11);
             }
             else {
                 targetx = rc.readSharedArray(10);
-                targety = rc.getMapHeight()-rc.readSharedArray(11);
+                targety = rc.getMapHeight()-rc.readSharedArray(11)-1;
             }
         }
 
