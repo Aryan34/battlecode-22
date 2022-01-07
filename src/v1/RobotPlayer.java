@@ -127,6 +127,14 @@ public strictfp class RobotPlayer {
         // Pick a direction to build in.
         Direction dir = directions[rng.nextInt(directions.length)];
         int rn = rc.getRoundNum();
+        RobotInfo[] robs = rc.senseNearbyRobots();
+        int watchs = 0;
+        for (int a=0; a<robs.length; a++){
+            if (robs[a].type==RobotType.WATCHTOWER){
+                watchs++;
+            }
+        }
+
         if (rn<=1){
             rc.writeSharedArray(10, rc.getLocation().x);
             rc.writeSharedArray(11, rc.getLocation().y);
@@ -146,7 +154,7 @@ public strictfp class RobotPlayer {
                 }
             }
         } 
-        else if (rn<160){
+        else if (rc.getTeamLeadAmount(rc.getTeam())>2000 && watchs<4){
             rc.setIndicatorString("Trying to build a builder");
             if (rc.canBuildRobot(RobotType.BUILDER, dir)) {
                 rc.buildRobot(RobotType.BUILDER, dir);
@@ -390,7 +398,6 @@ public strictfp class RobotPlayer {
                         rc.buildRobot(RobotType.LABORATORY, dir);
                         break;
                     }
-                    
                 }
             }
         } else if (count>3 && maketower){
@@ -400,9 +407,6 @@ public strictfp class RobotPlayer {
             }
         }
 
-
-
-        // Also try to move randomly.
         Direction dir2 = directions[rng.nextInt(directions.length)];
         if (!dontmove && rc.canMove(dir2)) {
             rc.move(dir2);

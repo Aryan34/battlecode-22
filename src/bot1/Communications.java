@@ -99,22 +99,22 @@ public class Communications {
                 rc.writeSharedArray(8, rc.readSharedArray(8) + update);
                 break;
             case LABORATORY:
-                rc.writeSharedArray(9, rc.readSharedArray(8) + update);
+                rc.writeSharedArray(9, rc.readSharedArray(9) + update);
                 break;
             case WATCHTOWER:
-                rc.writeSharedArray(10, rc.readSharedArray(8) + update);
+                rc.writeSharedArray(10, rc.readSharedArray(10) + update);
                 break;
             case MINER:
-                rc.writeSharedArray(11, rc.readSharedArray(8) + update);
+                rc.writeSharedArray(11, rc.readSharedArray(11) + update);
                 break;
             case BUILDER:
-                rc.writeSharedArray(12, rc.readSharedArray(8) + update);
+                rc.writeSharedArray(12, rc.readSharedArray(12) + update);
                 break;
             case SOLDIER:
-                rc.writeSharedArray(13, rc.readSharedArray(8) + update);
+                rc.writeSharedArray(13, rc.readSharedArray(13) + update);
                 break;
             case SAGE:
-                rc.writeSharedArray(14, rc.readSharedArray(8) + update);
+                rc.writeSharedArray(14, rc.readSharedArray(14) + update);
                 break;
         }
     }

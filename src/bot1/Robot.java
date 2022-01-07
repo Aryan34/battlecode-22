@@ -40,7 +40,9 @@ public class Robot {
     void playTurn() throws GameActionException {
         roundNum = rc.getRoundNum();
         myLoc = rc.getLocation();
-
+        if (turnCount==0){
+            comms.updateRobotCount(myType, 1);
+        }
         if (!considerDead && rc.getHealth() < 6) {
             considerDead = true;
             comms.updateRobotCount(myType, -1);

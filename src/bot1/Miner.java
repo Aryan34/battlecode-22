@@ -14,26 +14,50 @@ public class Miner extends Robot {
 
     void playTurn() throws GameActionException {
         super.playTurn();
-
-        if (depositLoc == null) {
-            if (!findOptimalDeposit()) {
-                nav.moveRandom();
-            } else {
-                comms.addLeadDepositLoc(depositLoc);
+        MapLocation me = rc.getLocation();
+        int count = rc.senseLead(me);
+        if (count!=0){
+            for (int dx = -1; dx <= 1; dx++) {
+                for (int dy = -1; dy <= 1; dy++) {
+                    MapLocation mineLocation = new MapLocation(me.x + dx, me.y + dy);
+                    while (rc.canMineGold(mineLocation) && rc.senseGold(mineLocation)>1) {
+                        rc.mineGold(mineLocation);
+                    }
+                    while (rc.canMineLead(mineLocation) && rc.senseLead(mineLocation)>1) {
+                        rc.mineLead(mineLocation);
+                    }
+                }
             }
         }
-
-        if (myLoc.distanceSquaredTo(depositLoc) > RobotType.MINER.actionRadiusSquared){
-            nav.moveTowards(depositLoc);
-        } else if (rc.senseLead(depositLoc) == 0) {
-            comms.removeLeadDepositLoc(depositLoc);
-            depositLoc = null;
+        else {
+            comms.updateRobotCount(rc.getType(), -1);
+            rc.disintegrate();
+        }
+        if (count<2){
             nav.moveRandom();
-        } else {
-            while (rc.senseLead(depositLoc) > 0 && rc.canMineLead(depositLoc)) {
-                rc.mineLead(depositLoc);
-            }
         }
+        // if (rc.senseLead(rc.getLocation()) == 0){
+        //     rc.disintegrate();
+        // }
+        // if (depositLoc == null) {
+        //     if (!findOptimalDeposit()) {
+        //         nav.moveRandom();
+        //     } else {
+        //         comms.addLeadDepositLoc(depositLoc);
+        //     }
+        // }
+
+        // if (myLoc.distanceSquaredTo(depositLoc) > RobotType.MINER.actionRadiusSquared){
+        //     nav.moveTowards(depositLoc);
+        // } else if (rc.senseLead(depositLoc) <= 1) {
+        //     comms.removeLeadDepositLoc(depositLoc);
+        //     depositLoc = null;
+        //     nav.moveRandom();
+        // } else {
+        //     while (rc.senseLead(depositLoc) > 1 && rc.canMineLead(depositLoc)) {
+        //         rc.mineLead(depositLoc);
+        //     }
+        // }
     }
 
     boolean findOptimalDeposit() throws GameActionException {
@@ -46,7 +70,7 @@ public class Miner extends Robot {
             }
         }
 
-        if (optimalDepositValue == 0) {
+        if (optimalDepositValue <= 1) {
             MapLocation[] depositLocs = comms.getLeadDepositLocs();
             for (MapLocation loc : depositLocs) {
                 if (loc != null) {

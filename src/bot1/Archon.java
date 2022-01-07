@@ -19,13 +19,13 @@ public class Archon extends Robot {
     static RobotType[] buildOrder2 = {
             RobotType.MINER,
             RobotType.MINER,
-            RobotType.MINER,
+            RobotType.BUILDER,
+            RobotType.BUILDER,
             RobotType.SOLDIER,
             RobotType.MINER,
             RobotType.MINER,
-            RobotType.MINER,
-            RobotType.SOLDIER,
-            RobotType.MINER,
+            RobotType.BUILDER,
+            RobotType.BUILDER,
             RobotType.SOLDIER
     };
 
@@ -41,6 +41,20 @@ public class Archon extends Robot {
             RobotType.SOLDIER,
             RobotType.MINER
     };
+
+    static RobotType[] buildOrder4 = {
+        RobotType.SOLDIER,
+        RobotType.MINER,
+        RobotType.MINER,
+        RobotType.MINER,
+        RobotType.MINER,
+        RobotType.MINER,
+        RobotType.MINER,
+        RobotType.MINER,
+        RobotType.MINER,
+        RobotType.SOLDIER
+    };
+
 
     int buildIndex;
 
@@ -80,11 +94,13 @@ public class Archon extends Robot {
             enemySoldierSensed = false;
         }
 
-        rc.setIndicatorString("VAL: " + String.valueOf(buildIndex));
+        rc.setIndicatorString("VAL: " + String.valueOf(buildIndex)+" "+comms.getRobotCount(RobotType.MINER));
         if (enemySoldierSensed) {
             rc.setIndicatorString("Case: Enemy");
             followBuildOrder(buildOrder1);
-        } else if (buildIndex < 20) {
+        } else if (comms.getRobotCount(RobotType.MINER)<20) {
+            followBuildOrder(buildOrder4);
+        } else if (comms.getRobotCount(RobotType.BUILDER)<4) {
             followBuildOrder(buildOrder2);
         } else if (buildIndex < 200) {
             rc.setIndicatorString("Case: 200");

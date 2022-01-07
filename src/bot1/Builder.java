@@ -64,9 +64,7 @@ public class Builder extends Robot {
             for (Direction dir : Navigation.cardinalDirections) {
                 if (rc.canBuildRobot(RobotType.WATCHTOWER, dir)) {
                     rc.buildRobot(RobotType.WATCHTOWER, dir);
-                    mode = Mode.REPAIR;
-                    repairTarget = myLoc.add(dir);
-                    break;
+                    
                 }
             }
         }
