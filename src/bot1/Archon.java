@@ -43,16 +43,16 @@ public class Archon extends Robot {
     };
 
     static RobotType[] buildOrder4 = {
-        RobotType.SOLDIER,
-        RobotType.MINER,
-        RobotType.MINER,
-        RobotType.MINER,
-        RobotType.MINER,
-        RobotType.MINER,
-        RobotType.MINER,
-        RobotType.MINER,
-        RobotType.MINER,
-        RobotType.SOLDIER
+            RobotType.MINER,
+            RobotType.MINER,
+            RobotType.MINER,
+            RobotType.MINER,
+            RobotType.MINER,
+            RobotType.MINER,
+            RobotType.SOLDIER,
+            RobotType.MINER,
+            RobotType.MINER,
+            RobotType.SOLDIER
     };
 
 
@@ -101,30 +101,30 @@ public class Archon extends Robot {
         }
 
         if (enemySoldierSensed) {
-//            rc.setIndicatorString("Case: Enemy");
+            rc.setIndicatorString("Case: Enemy");
             followBuildOrder(buildOrder1);
-        } else if (comms.getRobotCount(RobotType.MINER)<20) {
+        } else if (comms.getRobotCount(RobotType.MINER) < 20) {
             followBuildOrder(buildOrder4);
-        } else if (comms.getRobotCount(RobotType.BUILDER)<4) {
+        } else if (comms.getRobotCount(RobotType.BUILDER) < 4) {
             followBuildOrder(buildOrder2);
         } else if (buildIndex < 200) {
-//            rc.setIndicatorString("Case: 200");
+            rc.setIndicatorString("Case: 200");
             followBuildOrder(buildOrder3);
         } else if (buildIndex < 300) {
-//            rc.setIndicatorString("Case: 300");
+            rc.setIndicatorString("Case: 300");
             followBuildOrder(buildOrder1);
         } else if (buildIndex < 400) {
-//            rc.setIndicatorString("Case: 400");
+            rc.setIndicatorString("Case: 400");
             if (buildersSpawned < 5) {
-//                if (util.tryBuildRandom(RobotType.BUILDER)) {
-//                    ++buildersSpawned;
-//                }
+                if (util.tryBuildRandom(RobotType.BUILDER)) {
+                    ++buildersSpawned;
+                }
                 buildersSpawned++;
             } else {
                 followBuildOrder(buildOrder3);
             }
         } else {
-//            rc.setIndicatorString("Case: ELSE");
+            rc.setIndicatorString("Case: ELSE");
             if (rc.getTeamGoldAmount(myTeam) > RobotType.SAGE.buildCostGold * 1.5) {
                 util.tryBuildRandom(RobotType.SAGE);
             } else {
@@ -134,7 +134,6 @@ public class Archon extends Robot {
     }
 
     void followBuildOrder(RobotType[] buildOrder) throws GameActionException {
-        rc.setIndicatorString("ID: " + comms.getArchonId(myLoc) + ", Mutex: " + comms.getBuildMutex());
         if (comms.getArchonId(myLoc) == comms.getBuildMutex()) {
             if (tryBuild(buildOrder[buildIndex % 10])) {
                 ++buildIndex;
@@ -176,7 +175,7 @@ public class Archon extends Robot {
                     weightedThreatCount += 10;
                     break;
                 case WATCHTOWER:
-                    weightedThreatCount += 5;
+                    weightedThreatCount += 7;
                     break;
                 default:
                     break;
