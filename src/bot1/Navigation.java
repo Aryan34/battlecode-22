@@ -34,7 +34,7 @@ public class Navigation {
     static final int RUBBLE_THRESHOLD = 70;
 
     static Direction[] closeDirections(Direction dir) {
-        Direction[] close = {
+        return new Direction[]{
                 dir,
                 dir.rotateLeft(),
                 dir.rotateRight(),
@@ -44,14 +44,23 @@ public class Navigation {
                 dir.rotateRight().rotateRight().rotateRight(),
                 dir.opposite()
         };
-        return close;
+    }
+
+    static Direction[] evenCloserDirections(Direction dir) {
+        return new Direction[]{
+                dir,
+                dir.rotateLeft(),
+                dir.rotateRight(),
+                dir.rotateLeft().rotateLeft(),
+                dir.rotateRight().rotateRight(),
+        };
     }
 
     static final int RECENTLY_VISITED_THRESHOLD = 10;
-    
+
 
     RobotController rc;
-    
+
     int[][] visited = new int[GameConstants.MAP_MAX_HEIGHT][GameConstants.MAP_MAX_WIDTH];
 
     Navigation(RobotController rc) {
@@ -91,6 +100,15 @@ public class Navigation {
         }
         rc.setIndicatorString("Target: " + loc.x + ", " + loc.y);
         return true;
+    }
+
+    boolean moveAway(MapLocation loc) throws GameActionException {
+        Direction dir = evenCloserDirections(rc.getLocation().directionTo(loc).opposite())[Robot.rng.nextInt(5)];
+        if (rc.canMove(dir)) {
+            rc.move(dir);
+            return true;
+        }
+        return false;
     }
 
     // treat all rubble above threshold as impassable, otherwise move towards target

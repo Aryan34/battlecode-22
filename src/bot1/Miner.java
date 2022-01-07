@@ -3,7 +3,6 @@ package bot1;
 import battlecode.common.*;
 
 public class Miner extends Robot {
-    MapLocation depositLoc = null;
 
     int leadCount;
 
@@ -15,28 +14,35 @@ public class Miner extends Robot {
     void playTurn() throws GameActionException {
         super.playTurn();
 
-        if (depositLoc == null) {
-            if (!findOptimalDeposit()) {
-                nav.moveRandom();
+        rc.setIndicatorString("Action: " + numRoundsNoActions + ", Move: " + numRoundsNoMove);
+        MapLocation neighboringDepositLoc = findOptimalNeighboringDeposit();
+        if (neighboringDepositLoc != null) {
+            while (rc.senseLead(neighboringDepositLoc) > 1 && rc.canMineLead(neighboringDepositLoc)) {
+                rc.mineLead(neighboringDepositLoc);
+            }
+        } else {
+            MapLocation depositLoc = findOptimalDeposit();
+            if (depositLoc != null) {
+                if (!nav.moveTowards(depositLoc)) {
+                    nav.moveAway(parentLoc);
+                }
             } else {
-                comms.addLeadDepositLoc(depositLoc);
+                nav.moveAway(parentLoc);
             }
         }
 
-        if (myLoc.distanceSquaredTo(depositLoc) > RobotType.MINER.actionRadiusSquared){
-            nav.moveTowards(depositLoc);
-        } else if (rc.senseLead(depositLoc) == 0) {
-            comms.removeLeadDepositLoc(depositLoc);
-            depositLoc = null;
-            nav.moveRandom();
-        } else {
-            while (rc.senseLead(depositLoc) > 0 && rc.canMineLead(depositLoc)) {
-                rc.mineLead(depositLoc);
-            }
-        }
+//        disintegrate if miner gets stuck
+//        if (numRoundsNoActions >= INACTION_TURNS_THRESHOLD && numRoundsNoMove >= INACTION_TURNS_THRESHOLD) {
+//            rc.disintegrate();
+//        }
+//
+//        if (turnCount > 25) {
+//            updateInaction();
+//        }
     }
 
-    boolean findOptimalDeposit() throws GameActionException {
+    MapLocation findOptimalDeposit() throws GameActionException {
+        MapLocation depositLoc = null;
         int optimalDepositValue = 0;
         for (MapLocation loc : rc.senseNearbyLocationsWithLead(RobotType.MINER.visionRadiusSquared)) {
             int value = rc.senseLead(loc) - (2 * myLoc.distanceSquaredTo(loc));
@@ -46,19 +52,20 @@ public class Miner extends Robot {
             }
         }
 
-        if (optimalDepositValue <= 1) {
-            MapLocation[] depositLocs = comms.getLeadDepositLocs();
-            for (MapLocation loc : depositLocs) {
-                if (loc != null) {
-                    if (depositLoc == null) {
-                        depositLoc = loc;
-                    } else if (myLoc.distanceSquaredTo(loc) < myLoc.distanceSquaredTo(depositLoc)){
-                        depositLoc = loc;
-                    }
-                }
+        return depositLoc;
+    }
+
+    MapLocation findOptimalNeighboringDeposit() throws GameActionException {
+        MapLocation depositLoc = null;
+        int optimalDepositValue = 1;
+        for (MapLocation loc : rc.senseNearbyLocationsWithLead(RobotType.MINER.actionRadiusSquared)) {
+            int value = rc.senseLead(loc);
+            if (value > optimalDepositValue) {
+                optimalDepositValue = value;
+                depositLoc = loc;
             }
         }
 
-        return depositLoc != null;
+        return depositLoc;
     }
 }
