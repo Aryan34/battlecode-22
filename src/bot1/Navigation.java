@@ -31,6 +31,8 @@ public class Navigation {
         return false;
     }
 
+    static final int RUBBLE_THRESHOLD = 70;
+
     static Direction[] closeDirections(Direction dir) {
         Direction[] close = {
                 dir,
@@ -46,25 +48,28 @@ public class Navigation {
     }
 
     static final int RECENTLY_VISITED_THRESHOLD = 10;
+    
 
     RobotController rc;
-    Robot robot;
-
+    
     int[][] visited = new int[GameConstants.MAP_MAX_HEIGHT][GameConstants.MAP_MAX_WIDTH];
 
-    Navigation(RobotController rc, Robot robot) {
+    Navigation(RobotController rc) {
         this.rc = rc;
-        this.robot = robot;
     }
 
     boolean moveRandom() throws GameActionException {
-        Direction dir = directions[Robot.rng.nextInt(directions.length)];
-        if (rc.canMove(dir)) {
-            rc.move(dir);
-            System.out.println("I moved!");
+        int randX = (Robot.rng.nextInt(rc.getMapWidth()));
+        int randY = (Robot.rng.nextInt(rc.getMapHeight()));
+
+        MapLocation randLoc = new MapLocation(randX, randY);
+        Direction randDir = rc.getLocation().directionTo(randLoc);
+
+        if (rc.canMove(randDir)) {
+            rc.setIndicatorString("Moved random to: " + randX + ", " + randY);
+            rc.move(randDir);
             return true;
         }
-
         return false;
     }
 
@@ -80,71 +85,39 @@ public class Navigation {
     }
 
     boolean moveTowards(MapLocation loc) throws GameActionException {
-        Direction dir = robot.myLoc.directionTo(loc);
-        if (rc.canMove(dir)) {
-            rc.move(dir);
-            System.out.println("I moved!");
+        if (!greedy(loc)) {
+            rc.setIndicatorString("STUCKKKK");
+            return false;
+        }
+        rc.setIndicatorString("Target: " + loc.x + ", " + loc.y);
+        return true;
+    }
+
+    // treat all rubble above threshold as impassable, otherwise move towards target
+    // greedily -> choose lowest rubble neighbor tile that doesn't go backwards
+    // [directionToTarget.opposite, directionToTarget.opposite.{rotateRight, rotateLeft}]
+    boolean greedy(MapLocation target) throws GameActionException {
+        int currDist = rc.getLocation().distanceSquaredTo(target);
+        int bestDist = 10000000;
+        int minRubbleTile = GameConstants.MAX_RUBBLE;
+        Direction bestDir = null;
+
+        for (Direction dir : closeDirections(rc.getLocation().directionTo(target))) {
+            int newDist = rc.getLocation().add(dir).distanceSquaredTo(target);
+            if (rc.canMove(dir) && newDist < currDist) {
+                if (bestDir == null || rc.senseRubble(rc.getLocation().add(dir)) < minRubbleTile
+                        || (rc.senseRubble(rc.getLocation().add(dir)) == minRubbleTile && newDist < bestDist)) {
+                    bestDist = newDist;
+                    minRubbleTile = rc.senseRubble(rc.getLocation().add(dir));
+                    bestDir = dir;
+                }
+            }
+        }
+
+        if (bestDir != null) {
+            rc.move(bestDir);
             return true;
         }
-
         return false;
-    }
-
-    void brownian() throws GameActionException {
-        double netX = 0;
-        double netY = 0;
-        double robotCharge = 100;
-
-        // Repel off friendly robots of same type
-        for (RobotInfo info : rc.senseNearbyRobots(rc.getType().visionRadiusSquared, rc.getTeam())) {
-            if (info.getType() == rc.getType()) {
-                double force = robotCharge / rc.getLocation().distanceSquaredTo(info.getLocation());
-                double dx = (rc.getLocation().x - info.getLocation().x) * force;
-                double dy = (rc.getLocation().y - info.getLocation().y) * force;
-                netX += dx;
-                netY += dy;
-            }
-        }
-        System.out.println("After repelling off teammates, my net direction is: " + netX + ", " + netY);
-
-        // Repel off walls
-        double wallForce = 500;
-        for (Direction dir : cardinalDirections) {
-            MapLocation reachLoc = rc.getLocation();
-            reachLoc = reachLoc.add(dir);
-            while (robot.myLoc.distanceSquaredTo(reachLoc) <= robot.myType.visionRadiusSquared) {
-                if (!rc.onTheMap(reachLoc)) {
-                    System.out.println("Reach loc: " + reachLoc);
-                    double force = wallForce / rc.getLocation().distanceSquaredTo(reachLoc);
-                    double dx = (rc.getLocation().x - reachLoc.x) * force;
-                    double dy = (rc.getLocation().y - reachLoc.y) * force;
-                    netX += dx;
-                    netY += dy;
-                    break;
-                }
-                reachLoc = reachLoc.add(dir);
-            }
-        }
-        System.out.println("After repelling off walls, my net direction is: " + netX + ", " + netY);
-
-        // find overall direction to move in
-        int dx = (int) Math.round(netX);
-        int dy = (int) Math.round(netY);
-        MapLocation brownianDest = robot.myLoc.translate(dx, dy);
-        Direction dir = robot.myLoc.directionTo(brownianDest);
-
-        if (dir != Direction.CENTER && rc.canMove(dir)) {
-            if (rc.getRoundNum() - visited[brownianDest.x][brownianDest.y] < RECENTLY_VISITED_THRESHOLD) {
-                // TODO: Implement a move to least recently visited tile and use that here
-                moveRandom();
-                System.out.println("Already visited this tile recently, so not moving here");
-            } else {
-                rc.move(dir);
-                visited[brownianDest.x][brownianDest.y] = rc.getRoundNum();
-            }
-        }
-    }
-
-    void bugPath(MapLocation target) {
     }
 }

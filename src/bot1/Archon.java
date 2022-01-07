@@ -94,22 +94,27 @@ public class Archon extends Robot {
             enemySoldierSensed = false;
         }
 
-        rc.setIndicatorString("VAL: " + String.valueOf(buildIndex)+" "+comms.getRobotCount(RobotType.MINER));
+        if (roundNum == 100) {
+            if (comms.getArchonCount() != rc.getArchonCount()) {
+                rc.resign();
+            }
+        }
+
         if (enemySoldierSensed) {
-            rc.setIndicatorString("Case: Enemy");
+//            rc.setIndicatorString("Case: Enemy");
             followBuildOrder(buildOrder1);
         } else if (comms.getRobotCount(RobotType.MINER)<20) {
             followBuildOrder(buildOrder4);
         } else if (comms.getRobotCount(RobotType.BUILDER)<4) {
             followBuildOrder(buildOrder2);
         } else if (buildIndex < 200) {
-            rc.setIndicatorString("Case: 200");
+//            rc.setIndicatorString("Case: 200");
             followBuildOrder(buildOrder3);
         } else if (buildIndex < 300) {
-            rc.setIndicatorString("Case: 300");
+//            rc.setIndicatorString("Case: 300");
             followBuildOrder(buildOrder1);
         } else if (buildIndex < 400) {
-            rc.setIndicatorString("Case: 400");
+//            rc.setIndicatorString("Case: 400");
             if (buildersSpawned < 5) {
 //                if (util.tryBuildRandom(RobotType.BUILDER)) {
 //                    ++buildersSpawned;
@@ -119,7 +124,7 @@ public class Archon extends Robot {
                 followBuildOrder(buildOrder3);
             }
         } else {
-            rc.setIndicatorString("Case: ELSE");
+//            rc.setIndicatorString("Case: ELSE");
             if (rc.getTeamGoldAmount(myTeam) > RobotType.SAGE.buildCostGold * 1.5) {
                 util.tryBuildRandom(RobotType.SAGE);
             } else {
@@ -129,8 +134,12 @@ public class Archon extends Robot {
     }
 
     void followBuildOrder(RobotType[] buildOrder) throws GameActionException {
-        if (tryBuild(buildOrder[buildIndex % 10])) {
-            ++buildIndex;
+        rc.setIndicatorString("ID: " + comms.getArchonId(myLoc) + ", Mutex: " + comms.getBuildMutex());
+        if (comms.getArchonId(myLoc) == comms.getBuildMutex()) {
+            if (tryBuild(buildOrder[buildIndex % 10])) {
+                ++buildIndex;
+                comms.updateBuildMutex();
+            }
         }
     }
 

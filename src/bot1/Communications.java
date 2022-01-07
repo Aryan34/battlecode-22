@@ -4,11 +4,28 @@ import battlecode.common.*;
 
 public class Communications {
     RobotController rc;
-    Robot robot;
 
-    Communications(RobotController rc, Robot robot) {
+    Communications(RobotController rc) {
         this.rc = rc;
-        this.robot = robot;
+    }
+
+    int getArchonId(MapLocation loc) throws GameActionException {
+        int encodedLoc = encodeLocation(loc);
+        for (int i = 0; i < 4; ++i) {
+            if (rc.readSharedArray(i) == encodedLoc) {
+                return i;
+            }
+        }
+
+        return -1;
+    }
+
+    int getBuildMutex() throws GameActionException {
+        return rc.readSharedArray(63);
+    }
+
+    void updateBuildMutex() throws GameActionException {
+        rc.writeSharedArray(63, (rc.readSharedArray(63) + 1) % rc.getArchonCount());
     }
 
     int getArchonCount() throws GameActionException {

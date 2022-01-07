@@ -23,8 +23,8 @@ public class Robot {
 
     public Robot(RobotController rc) {
         Robot.rc = rc;
-        comms = new Communications(rc, this);
-        nav = new Navigation(rc, this);
+        comms = new Communications(rc);
+        nav = new Navigation(rc);
         util = new Util(rc, this);
 
         roundNum = rc.getRoundNum();
