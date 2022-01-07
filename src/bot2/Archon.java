@@ -47,7 +47,7 @@ public class Archon extends Robot {
             RobotType.MINER,
             RobotType.MINER,
             RobotType.MINER,
-            RobotType.MINER,
+            RobotType.SOLDIER,
             RobotType.MINER,
             RobotType.MINER,
             RobotType.MINER,
@@ -65,6 +65,7 @@ public class Archon extends Robot {
     int buildersSpawned;
     int minersSpawned;
     int soldiersSpawned;
+    int watchtowersSpawned;
 
     RobotType[] recentlySpawned = new RobotType[5];
 
@@ -81,69 +82,43 @@ public class Archon extends Robot {
         buildersSpawned = 0;
         minersSpawned = 0;
         soldiersSpawned = 0;
+        watchtowersSpawned = 0;
     }
 
     void playTurn() throws GameActionException {
         super.playTurn();
 
-        Direction dir = Navigation.directions[rng.nextInt(Navigation.directions.length)];
-        int rn = rc.getRoundNum();
         RobotInfo[] robs = rc.senseNearbyRobots();
-        int watchs = 0;
         for (RobotInfo rob : robs) {
             if (rob.type == RobotType.WATCHTOWER) {
-                watchs++;
+                watchtowersSpawned++;
             }
         }
 
-        if (rn <= 1) {
+        if (roundNum <= 1) {
             rc.writeSharedArray(10, rc.getLocation().x);
             rc.writeSharedArray(11, rc.getLocation().y);
         }
-        if (rn < 100) {
-            if (rng.nextBoolean()) {
-                // Let's try to build a miner.
-                rc.setIndicatorString("Trying to build a miner");
-                if (rc.canBuildRobot(RobotType.MINER, dir)) {
-                    rc.buildRobot(RobotType.MINER, dir);
-                }
-            } else {
-                // Let's try to build a soldier.
-                rc.setIndicatorString("Trying to build a soldier");
-                if (rc.canBuildRobot(RobotType.SOLDIER, dir)) {
-                    rc.buildRobot(RobotType.SOLDIER, dir);
-                }
-            }
-        } else if (rc.getTeamLeadAmount(rc.getTeam()) > 2000 && watchs < 4) {
-            rc.setIndicatorString("Trying to build a builder");
-            if (rc.canBuildRobot(RobotType.BUILDER, dir)) {
-                rc.buildRobot(RobotType.BUILDER, dir);
-            }
-        } else if (rn < 200) {
-            // Let's try to build a soldier.
-            rc.setIndicatorString("Trying to build a soldier");
-            if (rc.canBuildRobot(RobotType.SOLDIER, dir)) {
-                rc.buildRobot(RobotType.SOLDIER, dir);
-            }
+
+        if (roundNum < 50) {
+            followBuildOrder(buildOrder4); // mostly miners
+        } else if (roundNum < 100) {
+            followBuildOrder(buildOrder3); // half miners, half soldiers
+        } else if (rc.getTeamLeadAmount(rc.getTeam()) > 2000 && watchtowersSpawned < 4) {
+            followBuildOrder(buildOrder2); // half builders, rest split between miners and soldiers
+        } else if (roundNum < 200) {
+            followBuildOrder(buildOrder1); // mostly soldiers
         } else if (rc.getTeamLeadAmount(rc.getTeam()) < 5000) {
-            // Let's try to build a miner.
-            rc.setIndicatorString("Trying to build a miner");
-            if (rc.canBuildRobot(RobotType.MINER, dir)) {
-                rc.buildRobot(RobotType.MINER, dir);
-            }
+            followBuildOrder(buildOrder4); // mostly miners
         } else {
-            if (rng.nextBoolean() && rn < 1800) {
-                // Let's try to build a miner.
+            if (rng.nextBoolean() && roundNum < 1800) {
+                // Let's try to build a sage.
                 rc.setIndicatorString("Trying to build a sage");
-                if (rc.canBuildRobot(RobotType.SAGE, dir)) {
-                    rc.buildRobot(RobotType.SAGE, dir);
-                }
+                tryBuild(RobotType.SAGE);
             } else {
                 // Let's try to build a soldier.
                 rc.setIndicatorString("Trying to build a soldier");
-                if (rc.canBuildRobot(RobotType.SOLDIER, dir)) {
-                    rc.buildRobot(RobotType.SOLDIER, dir);
-                }
+                tryBuild(RobotType.SOLDIER);
             }
         }
     }
