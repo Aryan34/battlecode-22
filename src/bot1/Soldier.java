@@ -13,6 +13,8 @@ public class Soldier extends Robot {
 
     Mode mode;
 
+    MapLocation possibleArchonLoc = null;
+
     public Soldier(RobotController rc) {
         super(rc);
         mode = Mode.ATTACK;
@@ -65,8 +67,17 @@ public class Soldier extends Robot {
 //            }
 //        }
 //        checkAttackPossible();
+        if (possibleArchonLoc == null ||
+                (myLoc.distanceSquaredTo(possibleArchonLoc) < myType.visionRadiusSquared) &&
+                        rc.senseRobotAtLocation(possibleArchonLoc) == null) {
+            possibleArchonLoc = randomAttackTarget();
+        }
 
-        brownian();
+        if (possibleArchonLoc != null) {
+            if (!nav.moveTowards(possibleArchonLoc, true, turnCount)) {
+                brownian();
+            }
+        }
     }
 
     void defend() throws GameActionException {
@@ -139,5 +150,19 @@ public class Soldier extends Robot {
         }
 
         return count;
+    }
+
+    MapLocation randomAttackTarget() throws GameActionException {
+        int symmetryType = rng.nextInt(3);
+        switch (symmetryType) {
+            case 0:
+                return nav.reflectHoriz(parentLoc);
+            case 1:
+                return nav.reflectVert(parentLoc);
+            case 2:
+                return nav.reflectDiag(parentLoc);
+        }
+
+        return nav.reflectDiag(parentLoc);
     }
 }

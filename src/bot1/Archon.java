@@ -105,8 +105,6 @@ public class Archon extends Robot {
             followBuildOrder(buildOrder1);
         } else if (comms.getRobotCount(RobotType.MINER) < 20) {
             followBuildOrder(buildOrder4);
-        } else if (comms.getRobotCount(RobotType.BUILDER) < 4) {
-            followBuildOrder(buildOrder2);
         } else if (buildIndex < 200) {
             rc.setIndicatorString("Case: 200");
             followBuildOrder(buildOrder3);
@@ -144,9 +142,9 @@ public class Archon extends Robot {
 
     boolean tryBuild(RobotType type) throws GameActionException {
         Direction dir = Navigation.directions[Robot.rng.nextInt(Navigation.directions.length)];
-        if (type == RobotType.MINER) {
-            dir = findBestLeadDeposit();
-        }
+//        if (type == RobotType.MINER) {
+//            dir = findBestLeadDeposit();
+//        }
 
         if (rc.canBuildRobot(type, dir)) {
             rc.buildRobot(type, dir);
