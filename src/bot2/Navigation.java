@@ -75,7 +75,6 @@ public class Navigation {
         Direction randDir = rc.getLocation().directionTo(randLoc);
 
         if (rc.canMove(randDir)) {
-            rc.setIndicatorString("Moved random to: " + randX + ", " + randY);
             rc.move(randDir);
             return true;
         }
@@ -94,29 +93,18 @@ public class Navigation {
     }
 
     boolean moveTowards(MapLocation loc) throws GameActionException {
-        if (!greedy(loc)) {
-            rc.setIndicatorString("STUCKKKK");
-            return false;
-        }
-        rc.setIndicatorString("Target: " + loc.x + ", " + loc.y);
-        return true;
-    }
-
-    boolean moveTowards(MapLocation loc, boolean kiteEnemies, int turnCount) throws GameActionException {
-        if (!greedy(loc)) {
-            rc.setIndicatorString("STUCKKKK");
-            return false;
-        }
-        rc.setIndicatorString("Target: " + loc.x + ", " + loc.y);
-        return true;
+        return greedy(loc);
     }
 
     boolean moveAway(MapLocation loc) throws GameActionException {
-        Direction dir = evenCloserDirections(rc.getLocation().directionTo(loc).opposite())[Robot.rng.nextInt(5)];
-        if (rc.canMove(dir)) {
-            rc.move(dir);
-            return true;
+        Direction[] awayDirs = evenCloserDirections(rc.getLocation().directionTo(loc).opposite());
+        for (Direction dir : awayDirs) {
+            if (rc.canMove(dir)) {
+                rc.move(dir);
+                return true;
+            }
         }
+
         return false;
     }
 
@@ -124,16 +112,21 @@ public class Navigation {
     // greedily -> choose lowest rubble neighbor tile that doesn't go backwards
     // [directionToTarget.opposite, directionToTarget.opposite.{rotateRight, rotateLeft}]
     boolean greedy(MapLocation target) throws GameActionException {
-        int currDist = rc.getLocation().distanceSquaredTo(target);
-        int bestDist = 10000000;
-        int minRubbleTile = GameConstants.MAX_RUBBLE;
+        if (!rc.isMovementReady()) {
+            return false;
+        }
+
+        MapLocation myLoc = rc.getLocation();
+        int currDist = myLoc.distanceSquaredTo(target);
+        int bestDist = 100000;
+        int minRubble = GameConstants.MAX_RUBBLE;
         Direction bestDir = null;
 
         MapLocation enemyLoc = null;
         int enemyDist = 10000;
         for (RobotInfo info : rc.senseNearbyRobots(rc.getType().visionRadiusSquared, rc.getTeam().opponent())) {
             if (info.type == RobotType.SOLDIER || info.type == RobotType.SAGE || info.type == RobotType.WATCHTOWER) {
-                int dist = rc.getLocation().distanceSquaredTo(info.location);
+                int dist = myLoc.distanceSquaredTo(info.location);
                 if (dist < info.type.actionRadiusSquared && dist < enemyDist) {
                     enemyDist = dist;
                     enemyLoc = info.location;
@@ -142,15 +135,16 @@ public class Navigation {
         }
 
         if (enemyLoc != null) {
-            bestDir = rc.getLocation().directionTo(enemyLoc).opposite();
+            bestDir = myLoc.directionTo(enemyLoc).opposite();
         } else {
-            for (Direction dir : closeDirections(rc.getLocation().directionTo(target))) {
-                int newDist = rc.getLocation().add(dir).distanceSquaredTo(target);
+            Direction[] closeDirs = evenCloserDirections(myLoc.directionTo(target));
+            for (Direction dir : closeDirs) {
+                int newDist = myLoc.add(dir).distanceSquaredTo(target);
                 if (rc.canMove(dir) && newDist < currDist) {
-                    if (bestDir == null || rc.senseRubble(rc.getLocation().add(dir)) < minRubbleTile
-                            || (rc.senseRubble(rc.getLocation().add(dir)) == minRubbleTile && newDist < bestDist)) {
+                    if (bestDir == null || rc.senseRubble(myLoc.add(dir)) < minRubble ||
+                            (rc.senseRubble(myLoc.add(dir)) == minRubble && newDist < bestDist)) {
                         bestDist = newDist;
-                        minRubbleTile = rc.senseRubble(rc.getLocation().add(dir));
+                        minRubble = rc.senseRubble(myLoc.add(dir));
                         bestDir = dir;
                     }
                 }

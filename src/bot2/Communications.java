@@ -59,6 +59,9 @@ public class Communications {
     MapLocation decodeLocation(int value) {
         int x = value & 0b1111111;
         int y = (value >> 7) & 0b1111111;
+        if (x == 0 && y == 0) {
+            return null;
+        }
         return new MapLocation(x - 1, y - 1);
     }
 

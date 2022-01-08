@@ -24,8 +24,6 @@ public class Robot {
     static final int LATTICE_MOD = 2;
     static final int INACTION_TURNS_THRESHOLD = 10;
 
-    int numRoundsNoActions;
-    int numRoundsNoMove;
     int teamLead;
 
     MapLocation myLoc;
@@ -44,8 +42,6 @@ public class Robot {
         considerDead = false;
         enemyArchonCountFlag = false;
 
-        numRoundsNoActions = 0;
-        numRoundsNoMove = 0;
         teamLead = 0;
 
         myLoc = rc.getLocation();

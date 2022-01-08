@@ -65,6 +65,7 @@ public class Archon extends Robot {
     int buildersSpawned;
     int minersSpawned;
     int soldiersSpawned;
+    int sagesSpawned;
 
     RobotType[] recentlySpawned = new RobotType[5];
 
@@ -81,10 +82,15 @@ public class Archon extends Robot {
         buildersSpawned = 0;
         minersSpawned = 0;
         soldiersSpawned = 0;
+        sagesSpawned = 0;
     }
 
     void playTurn() throws GameActionException {
         super.playTurn();
+
+        if (soldiersSpawned > 10) {
+            setAttackTarget();
+        }
 
         weightedThreatCount = countThreatsWeighted();
         if (weightedThreatCount > 0) {
@@ -116,6 +122,19 @@ public class Archon extends Robot {
         }
     }
 
+    void setAttackTarget() throws GameActionException {
+        if (rc.readSharedArray(17) != 0) {
+            return;
+        }
+
+        MapLocation[] enemyArchonLocs = comms.getEnemyArchonLocs();
+        for (MapLocation loc : enemyArchonLocs) {
+            if (loc != null) {
+                rc.writeSharedArray(17, comms.encodeLocation(loc));
+            }
+        }
+    }
+
     void followBuildOrder(RobotType[] buildOrder) throws GameActionException {
         if (comms.getArchonId(myLoc) == comms.getBuildMutex() || roundNum > 200) {
             if (tryBuild(buildOrder[buildIndex % 10])) {
@@ -127,20 +146,38 @@ public class Archon extends Robot {
 
     boolean tryBuild(RobotType type) throws GameActionException {
         Direction dir = Navigation.directions[Robot.rng.nextInt(Navigation.directions.length)];
-//        if (type == RobotType.MINER) {
-//            dir = findBestLeadDeposit();
-//        }
+        if (type == RobotType.MINER) {
+            dir = findBestLeadDeposit();
+        }
 
         if (rc.canBuildRobot(type, dir)) {
             rc.buildRobot(type, dir);
+            updateRecentlySpawned(type);
+            switch (type) {
+                case BUILDER:
+                    ++buildersSpawned;
+                case MINER:
+                    ++minersSpawned;
+                case SOLDIER:
+                    ++soldiersSpawned;
+                case SAGE:
+                    ++sagesSpawned;
+            }
             return true;
         } else {
             for (Direction closeDir : Navigation.closeDirections(dir)) {
                 if (rc.canBuildRobot(type, closeDir)) {
                     rc.buildRobot(type, closeDir);
                     updateRecentlySpawned(type);
-                    if (type == RobotType.BUILDER) {
-                        ++buildersSpawned;
+                    switch (type) {
+                        case BUILDER:
+                            ++buildersSpawned;
+                        case MINER:
+                            ++minersSpawned;
+                        case SOLDIER:
+                            ++soldiersSpawned;
+                        case SAGE:
+                            ++sagesSpawned;
                     }
                     return true;
                 }
