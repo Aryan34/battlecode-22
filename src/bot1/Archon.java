@@ -94,32 +94,24 @@ public class Archon extends Robot {
             enemySoldierSensed = false;
         }
 
-        if (roundNum == 100) {
-            if (comms.getArchonCount() != rc.getArchonCount()) {
-                rc.resign();
-            }
-        }
-
         if (enemySoldierSensed) {
-            rc.setIndicatorString("Case: Enemy");
             followBuildOrder(buildOrder1);
-        } else if (comms.getRobotCount(RobotType.MINER) < 20) {
+        } else if (comms.getRobotCount(RobotType.MINER) < 12) {
             followBuildOrder(buildOrder4);
-        } else if (buildIndex < 200) {
-            rc.setIndicatorString("Case: 200");
-            followBuildOrder(buildOrder3);
         } else if (buildIndex < 300) {
-            rc.setIndicatorString("Case: 300");
-            followBuildOrder(buildOrder1);
+            if (teamLead < 500) {
+                followBuildOrder(buildOrder3);
+            } else {
+                followBuildOrder(buildOrder1);
+            }
         } else if (buildIndex < 400) {
-            rc.setIndicatorString("Case: 400");
             if (buildersSpawned < 5) {
                 if (util.tryBuildRandom(RobotType.BUILDER)) {
                     ++buildersSpawned;
                 }
                 buildersSpawned++;
             } else {
-                followBuildOrder(buildOrder3);
+                followBuildOrder(buildOrder1);
             }
         } else {
             rc.setIndicatorString("Case: ELSE");
@@ -132,7 +124,7 @@ public class Archon extends Robot {
     }
 
     void followBuildOrder(RobotType[] buildOrder) throws GameActionException {
-        if (comms.getArchonId(myLoc) == comms.getBuildMutex()) {
+        if (comms.getArchonId(myLoc) == comms.getBuildMutex() || roundNum > 200) {
             if (tryBuild(buildOrder[buildIndex % 10])) {
                 ++buildIndex;
                 comms.updateBuildMutex();
