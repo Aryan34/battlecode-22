@@ -82,10 +82,13 @@ public class Navigation {
     }
 
     boolean moveRandomCardinal() throws GameActionException {
+        if (!rc.isMovementReady()) {
+            return false;
+        }
+
         Direction dir = cardinalDirections[Robot.rng.nextInt(cardinalDirections.length)];
         if (rc.canMove(dir)) {
             rc.move(dir);
-            System.out.println("I moved!");
             return true;
         }
 
@@ -93,18 +96,61 @@ public class Navigation {
     }
 
     boolean moveTowards(MapLocation loc) throws GameActionException {
+        if (!rc.isMovementReady()) {
+            return false;
+        }
+
         return greedy(loc);
     }
 
     boolean moveAway(MapLocation loc) throws GameActionException {
-        Direction[] awayDirs = evenCloserDirections(rc.getLocation().directionTo(loc).opposite());
+        if (!rc.isMovementReady()) {
+            return false;
+        }
+
+        int minRubble = 10000;
+        int currRubble = 10000;
+        Direction bestDir = null;
+
+        Direction[] awayDirs = closeDirections(rc.getLocation().directionTo(loc).opposite());
         for (Direction dir : awayDirs) {
-            if (rc.canMove(dir)) {
-                rc.move(dir);
-                return true;
+            if (!rc.onTheMap(rc.getLocation().add(dir))) {
+                continue;
+            }
+            currRubble = rc.senseRubble(rc.getLocation().add(dir));
+            if (currRubble < minRubble) {
+                minRubble = currRubble;
+                bestDir = dir;
             }
         }
 
+        if (bestDir != null && rc.canMove(bestDir)) {
+            rc.move(bestDir);
+            return true;
+        }
+        return false;
+    }
+
+    boolean runFromEnemies() throws GameActionException {
+        if (!rc.isMovementReady()) {
+            return false;
+        }
+
+        MapLocation enemyLoc = null;
+        int enemyDist = 10000;
+        for (RobotInfo info : rc.senseNearbyRobots(rc.getType().visionRadiusSquared, rc.getTeam().opponent())) {
+            if (info.type == RobotType.SOLDIER || info.type == RobotType.SAGE || info.type == RobotType.WATCHTOWER) {
+                int dist = rc.getLocation().distanceSquaredTo(info.location);
+                if (dist < enemyDist) {
+                    enemyDist = dist;
+                    enemyLoc = info.location;
+                }
+            }
+        }
+
+        if (enemyLoc != null) {
+            return moveAway(enemyLoc);
+        }
         return false;
     }
 
@@ -151,7 +197,7 @@ public class Navigation {
             }
         }
 
-        if (bestDir != null) {
+        if (bestDir != null && rc.canMove(bestDir)) {
             rc.move(bestDir);
             return true;
         }

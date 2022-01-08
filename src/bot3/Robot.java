@@ -3,7 +3,8 @@ package bot3;
 import battlecode.common.*;
 
 import java.util.Random;
-
+// move away from HQ code removed from this file
+// for run away, we now run away if we can sense enemy, not only if we r within their action radius
 public class Robot {
     static RobotController rc;
     static Communications comms;
@@ -69,10 +70,6 @@ public class Robot {
         myLoc = rc.getLocation();
         teamLead = rc.getTeamLeadAmount(myTeam);
 
-        if (turnCount < 20 && parentLoc != null && myLoc.distanceSquaredTo(parentLoc) <= 2) {
-            nav.moveAway(parentLoc);
-        }
-
         if (rc.canSenseLocation(new MapLocation(low_x_bound - 1, myLoc.y))) {
             low_x_bound--;
         }
@@ -112,25 +109,11 @@ public class Robot {
         ++turnCount;
     }
 
-    void runFromEnemies() throws GameActionException {
-        MapLocation enemyLoc = null;
-        int enemyDist = 10000;
-        for (RobotInfo info : rc.senseNearbyRobots(rc.getType().visionRadiusSquared, rc.getTeam().opponent())) {
-            if (info.type == RobotType.SOLDIER || info.type == RobotType.SAGE || info.type == RobotType.WATCHTOWER) {
-                int dist = rc.getLocation().distanceSquaredTo(info.location);
-                if (dist < info.type.actionRadiusSquared && dist < enemyDist) {
-                    enemyDist = dist;
-                    enemyLoc = info.location;
-                }
-            }
-        }
-
-        if (enemyLoc != null) {
-            nav.moveAway(enemyLoc);
-        }
-    }
-
     boolean brownian() throws GameActionException {
+        if (!rc.isMovementReady()) {
+            return false;
+        }
+
         double force_dx = 0;
         double force_dy = 0;
         double momentum_dx = 0;

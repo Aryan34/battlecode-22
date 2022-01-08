@@ -15,7 +15,12 @@ public class Miner extends Robot {
 
     void playTurn() throws GameActionException {
         super.playTurn();
-        runFromEnemies();
+        nav.runFromEnemies();
+
+        // move away from archon to allow it to continue building troops
+        if (2 < turnCount && turnCount < 20 && parentLoc != null && myLoc.distanceSquaredTo(parentLoc) <= 2) {
+            nav.moveAway(parentLoc);
+        }
 
         MapLocation neighboringDepositLoc = findOptimalNeighboringDeposit();
         if (neighboringDepositLoc != null) {
