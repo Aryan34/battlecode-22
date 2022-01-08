@@ -73,7 +73,6 @@ public class Communications {
                 return;
             }
         }
-        System.out.println("addFriendlyArchonLoc was called an extra time somewhere. ");
     }
 
     void addEnemyArchonLoc(MapLocation loc) throws GameActionException {
@@ -106,7 +105,7 @@ public class Communications {
         MapLocation[] locs = new MapLocation[4];
         for (int i = 4; i < 8; ++i) {
             int value = rc.readSharedArray(i);
-            if (value != 0 && value != -1) {
+            if (value != 0 && value != 0xFFFF) {
                 MapLocation loc = decodeLocation(value);
                 locs[i - 4] = loc;
             }
@@ -124,7 +123,7 @@ public class Communications {
         for (int i = 4; i < 8; ++i) {
             int value = rc.readSharedArray(i);
             if (value == encoded) {
-                rc.writeSharedArray(i, -1);
+                rc.writeSharedArray(i, 0xFFFF);
             }
         }
     }

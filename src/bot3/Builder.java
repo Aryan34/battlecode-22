@@ -40,8 +40,16 @@ public class Builder extends Robot {
     }
 
     void repair() throws GameActionException {
+        if (repairTarget == null || !rc.canSenseLocation(repairTarget)) {
+            return;
+        }
+
         RobotInfo repairTargetInfo = rc.senseRobotAtLocation(repairTarget);
-        if (repairTarget != null && rc.canRepair(repairTarget)) {
+        if (repairTargetInfo == null) {
+            return;
+        }
+
+        if (rc.canRepair(repairTarget)) {
             if (repairTargetInfo.health != repairTargetInfo.type.health) {
                 rc.repair(repairTarget);
             } else {
