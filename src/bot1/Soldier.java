@@ -100,10 +100,7 @@ public class Soldier extends Robot {
                 targetHealth = info.health;
             } else {
                 switch (info.type) {
-                    case ARCHON:
                     case SAGE:
-                        rc.attack(info.location);
-                        return;
                     case WATCHTOWER:
                     case SOLDIER:
                         if (info.health < targetHealth) {
@@ -111,8 +108,16 @@ public class Soldier extends Robot {
                             targetType = info.type;
                             targetHealth = info.health;
                         }
+                    case ARCHON:
+                        if (targetType != RobotType.SAGE && targetType != RobotType.WATCHTOWER &&
+                                targetType != RobotType.SOLDIER) {
+                            targetLoc = info.location;
+                            targetType = info.type;
+                            targetHealth = info.health;
+                        }
                     default:
-                        if (targetType != RobotType.WATCHTOWER && targetType != RobotType.SOLDIER
+                        if (targetType != RobotType.ARCHON && targetType != RobotType.WATCHTOWER &&
+                                targetType != RobotType.SOLDIER && targetType != RobotType.SAGE
                                 && info.health < targetHealth) {
                             targetLoc = info.location;
                             targetType = info.type;

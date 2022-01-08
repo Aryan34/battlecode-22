@@ -21,11 +21,11 @@ public class Communications {
     }
 
     int getBuildMutex() throws GameActionException {
-        return rc.readSharedArray(63);
+        return rc.readSharedArray(16);
     }
 
     void updateBuildMutex() throws GameActionException {
-        rc.writeSharedArray(63, (rc.readSharedArray(63) + 1) % rc.getArchonCount());
+        rc.writeSharedArray(16, (rc.readSharedArray(16) + 1) % rc.getArchonCount());
     }
 
     int getArchonCount() throws GameActionException {
@@ -113,7 +113,7 @@ public class Communications {
     }
 
     void chooseTargetEnemyArchon(int index) throws GameActionException {
-        rc.writeSharedArray(62, index + 1);
+        rc.writeSharedArray(15, index + 1);
     }
 
     void updateDestroyedEnemyArchon(MapLocation loc) throws GameActionException {
@@ -127,7 +127,7 @@ public class Communications {
     }
 
     MapLocation getTargetEnemyArchon() throws GameActionException {
-        int index = rc.readSharedArray(62);
+        int index = rc.readSharedArray(15);
         if (index == 0) {
             return null;
         }
