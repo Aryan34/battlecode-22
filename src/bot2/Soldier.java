@@ -9,11 +9,14 @@ public class Soldier extends Robot {
         DEFEND
     }
 
-    static final int ATTACK_COUNT_THRESHOLD = 4;
+    static final int ATTACK_COUNT_THRESHOLD = 15;
 
     Mode mode;
 
     MapLocation possibleArchonLoc = null;
+    MapLocation definiteArchonLoc = null;
+
+    boolean incrementedAttackerCount = false;
 
     public Soldier(RobotController rc) {
         super(rc);
@@ -74,7 +77,7 @@ public class Soldier extends Robot {
         }
 
         if (possibleArchonLoc != null) {
-            if (!nav.moveTowards(possibleArchonLoc, true, turnCount)) {
+            if (!nav.moveTowards(possibleArchonLoc)) {
                 brownian();
             }
         }
@@ -103,7 +106,8 @@ public class Soldier extends Robot {
                     case SAGE:
                     case WATCHTOWER:
                     case SOLDIER:
-                        if (info.health < targetHealth) {
+                        if ((targetType != RobotType.SAGE && targetType != RobotType.WATCHTOWER &&
+                                targetType != RobotType.SOLDIER) || info.health < targetHealth) {
                             targetLoc = info.location;
                             targetType = info.type;
                             targetHealth = info.health;
@@ -129,6 +133,11 @@ public class Soldier extends Robot {
 
         if (targetLoc != null) {
             rc.attack(targetLoc);
+            if (rc.senseRobotAtLocation(targetLoc) == null) {
+                comms.updateDestroyedEnemyArchon(targetLoc);
+                rc.writeSharedArray(17, 0);
+                rc.writeSharedArray(18, 0);
+            }
         }
     }
 
