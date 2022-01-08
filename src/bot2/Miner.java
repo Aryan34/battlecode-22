@@ -53,8 +53,7 @@ public class Miner extends Robot {
     }
 
     MapLocation randomSearchTarget() throws GameActionException {
-        int symmetryType = rng.nextInt(3);
-        switch (symmetryType) {
+        switch (rc.getID() % 3) {
             case 0:
                 return nav.reflectHoriz(parentLoc);
             case 1:
