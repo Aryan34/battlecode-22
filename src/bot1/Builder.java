@@ -25,6 +25,7 @@ public class Builder extends Robot {
 
     void playTurn() throws GameActionException {
         super.playTurn();
+        runFromEnemies();
 
         switch (mode) {
             case BUILD_LATTICE:

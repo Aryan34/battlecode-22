@@ -116,9 +116,22 @@ public class Robot {
         ++turnCount;
     }
 
-    void updateInaction() throws GameActionException {
-        numRoundsNoActions = rc.getActionCooldownTurns() == 0 ? numRoundsNoActions + 1 : 0;
-        numRoundsNoMove = rc.isMovementReady() ? numRoundsNoMove + 1 : 0;
+    void runFromEnemies() throws GameActionException {
+        MapLocation enemyLoc = null;
+        int enemyDist = 10000;
+        for (RobotInfo info : rc.senseNearbyRobots(rc.getType().visionRadiusSquared, rc.getTeam().opponent())) {
+            if (info.type == RobotType.SOLDIER || info.type == RobotType.SAGE || info.type == RobotType.WATCHTOWER) {
+                int dist = rc.getLocation().distanceSquaredTo(info.location);
+                if (dist < info.type.actionRadiusSquared && dist < enemyDist) {
+                    enemyDist = dist;
+                    enemyLoc = info.location;
+                }
+            }
+        }
+
+        if (enemyLoc != null) {
+            nav.moveAway(enemyLoc);
+        }
     }
 
     boolean brownian() throws GameActionException {

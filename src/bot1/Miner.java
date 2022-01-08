@@ -15,6 +15,7 @@ public class Miner extends Robot {
 
     void playTurn() throws GameActionException {
         super.playTurn();
+        runFromEnemies();
 
         rc.setIndicatorString("Action: " + numRoundsNoActions + ", Move: " + numRoundsNoMove);
         MapLocation neighboringDepositLoc = findOptimalNeighboringDeposit();
