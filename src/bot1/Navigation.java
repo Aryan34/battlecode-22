@@ -103,7 +103,7 @@ public class Navigation {
     }
 
     boolean moveTowards(MapLocation loc, boolean kiteEnemies, int turnCount) throws GameActionException {
-        if (!greedy(loc, kiteEnemies, turnCount)) {
+        if (!greedy(loc)) {
             rc.setIndicatorString("STUCKKKK");
             return false;
         }
@@ -129,41 +129,14 @@ public class Navigation {
         int minRubbleTile = GameConstants.MAX_RUBBLE;
         Direction bestDir = null;
 
-        for (Direction dir : closeDirections(rc.getLocation().directionTo(target))) {
-            int newDist = rc.getLocation().add(dir).distanceSquaredTo(target);
-            if (rc.canMove(dir) && newDist < currDist) {
-                if (bestDir == null || rc.senseRubble(rc.getLocation().add(dir)) < minRubbleTile
-                        || (rc.senseRubble(rc.getLocation().add(dir)) == minRubbleTile && newDist < bestDist)) {
-                    bestDist = newDist;
-                    minRubbleTile = rc.senseRubble(rc.getLocation().add(dir));
-                    bestDir = dir;
-                }
-            }
-        }
-
-        if (bestDir != null) {
-            rc.move(bestDir);
-            return true;
-        }
-        return false;
-    }
-
-    boolean greedy(MapLocation target, boolean kiteEnemies, int turnCount) throws GameActionException {
-        int currDist = rc.getLocation().distanceSquaredTo(target);
-        int bestDist = 10000000;
-        int minRubbleTile = GameConstants.MAX_RUBBLE;
-        Direction bestDir = null;
-
         MapLocation enemyLoc = null;
-        if (kiteEnemies) {
-            int enemyDist = 10000;
-            for (RobotInfo info : rc.senseNearbyRobots(rc.getType().visionRadiusSquared, rc.getTeam().opponent())) {
-                if (info.type == RobotType.SOLDIER || info.type == RobotType.SAGE || info.type == RobotType.WATCHTOWER) {
-                    int dist = rc.getLocation().distanceSquaredTo(info.location);
-                    if (dist < info.type.actionRadiusSquared && dist < enemyDist) {
-                        enemyDist = dist;
-                        enemyLoc = info.location;
-                    }
+        int enemyDist = 10000;
+        for (RobotInfo info : rc.senseNearbyRobots(rc.getType().visionRadiusSquared, rc.getTeam().opponent())) {
+            if (info.type == RobotType.SOLDIER || info.type == RobotType.SAGE || info.type == RobotType.WATCHTOWER) {
+                int dist = rc.getLocation().distanceSquaredTo(info.location);
+                if (dist < info.type.actionRadiusSquared && dist < enemyDist) {
+                    enemyDist = dist;
+                    enemyLoc = info.location;
                 }
             }
         }
