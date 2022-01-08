@@ -9,7 +9,7 @@ public class Archon extends Robot {
             RobotType.MINER,
             RobotType.SOLDIER,
             RobotType.SOLDIER,
-            RobotType.MINER,
+            RobotType.BUILDER,
             RobotType.SOLDIER,
             RobotType.SOLDIER,
             RobotType.MINER,
@@ -17,7 +17,7 @@ public class Archon extends Robot {
     };
 
     static RobotType[] buildOrder2 = {
-            RobotType.MINER,
+            RobotType.BUILDER,
             RobotType.MINER,
             RobotType.BUILDER,
             RobotType.BUILDER,
@@ -98,18 +98,11 @@ public class Archon extends Robot {
             followBuildOrder(buildOrder1);
         } else if (comms.getRobotCount(RobotType.MINER) < 12) {
             followBuildOrder(buildOrder4);
-        } else if (buildIndex < 300) {
+        } else if (buildIndex < 400) {
             if (teamLead < 500) {
                 followBuildOrder(buildOrder3);
-            } else {
-                followBuildOrder(buildOrder1);
-            }
-        } else if (buildIndex < 400) {
-            if (buildersSpawned < 5) {
-                if (util.tryBuildRandom(RobotType.BUILDER)) {
-                    ++buildersSpawned;
-                }
-                buildersSpawned++;
+            } else if (teamLead > 1000 && buildersSpawned < 8) {
+                followBuildOrder(buildOrder2);
             } else {
                 followBuildOrder(buildOrder1);
             }
@@ -146,6 +139,9 @@ public class Archon extends Robot {
                 if (rc.canBuildRobot(type, closeDir)) {
                     rc.buildRobot(type, closeDir);
                     updateRecentlySpawned(type);
+                    if (type == RobotType.BUILDER) {
+                        ++buildersSpawned;
+                    }
                     return true;
                 }
             }
