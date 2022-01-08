@@ -59,7 +59,7 @@ public class Communications {
     MapLocation decodeLocation(int value) {
         int x = value & 0b1111111;
         int y = (value >> 7) & 0b1111111;
-        return new MapLocation(x, y);
+        return new MapLocation(x - 1, y - 1);
     }
 
     void addFriendlyArchonLoc(MapLocation loc) throws GameActionException {

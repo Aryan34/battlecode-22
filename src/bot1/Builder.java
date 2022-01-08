@@ -40,7 +40,7 @@ public class Builder extends Robot {
                 repair();
                 break;
             default:
-                nav.moveRandom();
+                brownian();
         }
     }
 

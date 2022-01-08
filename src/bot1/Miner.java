@@ -24,10 +24,10 @@ public class Miner extends Robot {
             MapLocation depositLoc = findOptimalDeposit();
             if (depositLoc != null) {
                 if (!nav.moveTowards(depositLoc)) {
-                    nav.moveAway(parentLoc);
+                    brownian();
                 }
             } else {
-                nav.moveAway(parentLoc);
+                brownian();
             }
         }
 
