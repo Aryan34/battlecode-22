@@ -13,6 +13,7 @@ public class Robot {
     static int roundNum;
     static int turnCount;
     boolean considerDead;
+    boolean enemyArchonCountFlag;
 
     static final Random rng = new Random(6147);
     static final int LATTICE_MOD = 2;
@@ -35,6 +36,7 @@ public class Robot {
         roundNum = rc.getRoundNum();
         turnCount = 0;
         considerDead = false;
+        enemyArchonCountFlag = false;
 
         numRoundsNoActions = 0;
         numRoundsNoMove = 0;
@@ -66,6 +68,19 @@ public class Robot {
         } else if (considerDead && rc.getHealth() >= 6) {
             considerDead = false;
             comms.updateRobotCount(myType, 1);
+        }
+
+        if (!enemyArchonCountFlag) {
+            if (comms.getDetectedEnemyArchonCount() == rc.getArchonCount()) {
+                enemyArchonCountFlag = true;
+            }
+            else if (comms.getDetectedEnemyArchonCount() < rc.getArchonCount()) {
+                for (RobotInfo info : rc.senseNearbyRobots(myType.visionRadiusSquared, opponentTeam)) {
+                    if (info.type == RobotType.ARCHON) {
+                        comms.addEnemyArchonLoc(info.location);
+                    }
+                }
+            }
         }
 
         ++turnCount;

@@ -76,12 +76,14 @@ public class Communications {
     void addEnemyArchonLoc(MapLocation loc) throws GameActionException {
         int value = encodeLocation(loc);
         for (int i = 4; i < 8; ++i) {
+            if (rc.readSharedArray(i) == value) {
+                break;
+            }
             if (rc.readSharedArray(i) == 0) {
                 rc.writeSharedArray(i, value);
                 return;
             }
         }
-        System.out.println("addEnemyArchonLoc was called an extra time somewhere. ");
     }
 
     MapLocation[] getFriendlyArchonLocs() throws GameActionException {
@@ -101,13 +103,35 @@ public class Communications {
         MapLocation[] locs = new MapLocation[4];
         for (int i = 4; i < 8; ++i) {
             int value = rc.readSharedArray(i);
-            if (value != 0) {
+            if (value != 0 && value != -1) {
                 MapLocation loc = decodeLocation(value);
                 locs[i - 4] = loc;
             }
         }
 
         return locs;
+    }
+
+    void chooseTargetEnemyArchon(int index) throws GameActionException {
+        rc.writeSharedArray(62, index + 1);
+    }
+
+    void updateDestroyedEnemyArchon(MapLocation loc) throws GameActionException {
+        int encoded = encodeLocation(loc);
+        for (int i = 4; i < 8; ++i) {
+            int value = rc.readSharedArray(i);
+            if (value == encoded) {
+                rc.writeSharedArray(i, -1);
+            }
+        }
+    }
+
+    MapLocation getTargetEnemyArchon() throws GameActionException {
+        int index = rc.readSharedArray(62);
+        if (index == 0) {
+            return null;
+        }
+        return getEnemyArchonLocs()[index - 1];
     }
 
     void updateRobotCount(RobotType type, int update) throws GameActionException {
@@ -155,41 +179,5 @@ public class Communications {
             default:
                 return 0;
         }
-    }
-
-    void addLeadDepositLoc(MapLocation loc) throws GameActionException {
-        int value = encodeLocation(loc);
-        for (int i = 15; i < 25; ++i) {
-            if (rc.readSharedArray(i) == 0) {
-                rc.writeSharedArray(i, value);
-                return;
-            } else if (decodeLocation(rc.readSharedArray(i)).distanceSquaredTo(loc) < 2) {
-                return;
-            }
-        }
-    }
-
-    void removeLeadDepositLoc(MapLocation loc) throws GameActionException {
-        int value = encodeLocation(loc);
-        for (int i = 15; i < 25; ++i) {
-            if (rc.readSharedArray(i) == value) {
-                rc.writeSharedArray(i, 0);
-                return;
-            }
-        }
-    }
-
-    MapLocation[] getLeadDepositLocs() throws GameActionException {
-        MapLocation[] locations = new MapLocation[10];
-        for (int i = 15; i < 25; ++i) {
-            int value = rc.readSharedArray(i);
-            if (value == 0) {
-                locations[i - 15] = null;
-            } else {
-                locations[i - 15] = decodeLocation(value);
-            }
-        }
-
-        return locations;
     }
 }

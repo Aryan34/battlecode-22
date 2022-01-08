@@ -102,7 +102,7 @@ public class Util {
         int closestEnemyDist = 100000;
         MapLocation attackLoc = null;
 
-        for (RobotInfo info : rc.senseNearbyRobots(robot.myType.visionRadiusSquared, rc.getTeam().opponent())) {
+        for (RobotInfo info : rc.senseNearbyRobots(robot.myType.actionRadiusSquared, rc.getTeam().opponent())) {
             if (info.location.distanceSquaredTo(robot.myLoc) < closestEnemyDist) {
                 closestEnemyDist = info.location.distanceSquaredTo(robot.myLoc);
                 attackLoc = info.location;
@@ -116,7 +116,7 @@ public class Util {
         int lowestEnemyHealth = 100000;
         MapLocation attackLoc = null;
 
-        for (RobotInfo info : rc.senseNearbyRobots(robot.myType.visionRadiusSquared, rc.getTeam().opponent())) {
+        for (RobotInfo info : rc.senseNearbyRobots(robot.myType.actionRadiusSquared, rc.getTeam().opponent())) {
             if (info.health < lowestEnemyHealth) {
                 lowestEnemyHealth = info.health;
                 attackLoc = info.location;
