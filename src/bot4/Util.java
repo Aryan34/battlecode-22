@@ -112,11 +112,39 @@ public class Util {
         return attackLoc;
     }
 
+    MapLocation closestTarget() {
+        int closestEnemyDist = 100000;
+        MapLocation attackLoc = null;
+
+        for (RobotInfo info : rc.senseNearbyRobots(robot.myType.visionRadiusSquared, rc.getTeam().opponent())) {
+            if (info.location.distanceSquaredTo(robot.myLoc) < closestEnemyDist) {
+                closestEnemyDist = info.location.distanceSquaredTo(robot.myLoc);
+                attackLoc = info.location;
+            }
+        }
+
+        return attackLoc;
+    }
+
     MapLocation lowestHealthAttackTarget() {
         int lowestEnemyHealth = 100000;
         MapLocation attackLoc = null;
 
         for (RobotInfo info : rc.senseNearbyRobots(robot.myType.actionRadiusSquared, rc.getTeam().opponent())) {
+            if (info.health < lowestEnemyHealth) {
+                lowestEnemyHealth = info.health;
+                attackLoc = info.location;
+            }
+        }
+
+        return attackLoc;
+    }
+
+    MapLocation lowestHealthTarget() {
+        int lowestEnemyHealth = 100000;
+        MapLocation attackLoc = null;
+
+        for (RobotInfo info : rc.senseNearbyRobots(robot.myType.visionRadiusSquared, rc.getTeam().opponent())) {
             if (info.health < lowestEnemyHealth) {
                 lowestEnemyHealth = info.health;
                 attackLoc = info.location;
@@ -155,6 +183,50 @@ public class Util {
         int count = 0;
         for (RobotInfo info : rc.senseNearbyRobots(rc.getType().visionRadiusSquared, rc.getTeam().opponent())) {
             if (info.type == type) {
+                ++count;
+            }
+        }
+
+        return count;
+    }
+
+    int countNearbyFriendlyTroops(RobotType type, RobotInfo[] nearby) {
+        int count = 0;
+        for (RobotInfo info : nearby) {
+            if (info.type == type) {
+                ++count;
+            }
+        }
+
+        return count;
+    }
+
+    int countNearbyEnemyTroops(RobotType type, RobotInfo[] nearby) {
+        int count = 0;
+        for (RobotInfo info : nearby) {
+            if (info.type == type) {
+                ++count;
+            }
+        }
+
+        return count;
+    }
+
+    int countNearbyFriendlyAttackers(RobotInfo[] nearby) {
+        int count = 0;
+        for (RobotInfo info : nearby) {
+            if (info.type == RobotType.SAGE || info.type == RobotType.SOLDIER || info.type == RobotType.WATCHTOWER) {
+                ++count;
+            }
+        }
+
+        return count;
+    }
+
+    int countNearbyEnemyAttackers(RobotInfo[] nearby) {
+        int count = 0;
+        for (RobotInfo info : nearby) {
+            if (info.type == RobotType.SAGE || info.type == RobotType.SOLDIER || info.type == RobotType.WATCHTOWER) {
                 ++count;
             }
         }

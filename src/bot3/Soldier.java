@@ -65,7 +65,6 @@ public class Soldier extends Robot {
                 nav.moveTowards(definiteArchonLoc);
             } else {
                 int attackerCount= util.countNearbyFriendlyTroops(RobotType.SOLDIER);
-                System.out.println("ATTACKER COUNT: " + attackerCount);
                 if (attackerCount >= ATTACK_COUNT_THRESHOLD) {
                     nav.moveTowards(definiteArchonLoc);
                 } else {

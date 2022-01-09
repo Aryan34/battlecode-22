@@ -4,7 +4,6 @@ import battlecode.common.*;
 
 public class Soldier extends Robot {
     enum Mode {
-        SCOUT,
         ATTACK,
         DEFEND
     }
@@ -25,9 +24,6 @@ public class Soldier extends Robot {
         super.playTurn();
 
         switch (mode) {
-            case SCOUT:
-                scout();
-                break;
             case ATTACK:
                 attack();
                 break;
@@ -37,23 +33,8 @@ public class Soldier extends Robot {
         }
     }
 
-    void scout() throws GameActionException {
-        brownian();
-
-        // still have more enemy archons to find
-        if (comms.getDetectedEnemyArchonCount() < comms.getArchonCount()) {
-            for (RobotInfo info : rc.senseNearbyRobots(myType.visionRadiusSquared, opponentTeam)) {
-                if (info.type == RobotType.ARCHON) {
-                    comms.addEnemyArchonLoc(info.location);
-                }
-            }
-        } else { // detected all enemy archons, attack mode now
-            mode = Mode.ATTACK;
-        }
-    }
-
     void attack() throws GameActionException {
-        optimalAttack();
+        fight(rc.senseNearbyRobots(myType.visionRadiusSquared, opponentTeam));
 
         int encodedAttackTarget = rc.readSharedArray(17);
         if (encodedAttackTarget != 0) {
@@ -64,8 +45,7 @@ public class Soldier extends Robot {
             if (myLoc.distanceSquaredTo(definiteArchonLoc) > 35) {
                 nav.moveTowards(definiteArchonLoc);
             } else {
-                int attackerCount= util.countNearbyFriendlyTroops(RobotType.SOLDIER);
-                System.out.println("ATTACKER COUNT: " + attackerCount);
+                int attackerCount = util.countNearbyFriendlyTroops(RobotType.SOLDIER);
                 if (attackerCount >= ATTACK_COUNT_THRESHOLD) {
                     nav.moveTowards(definiteArchonLoc);
                 } else {
@@ -85,6 +65,45 @@ public class Soldier extends Robot {
                 }
             }
             brownian();
+        }
+    }
+
+    void fight(RobotInfo[] enemyInfo) throws GameActionException {
+        kite(enemyInfo);
+        optimalAttack();
+    }
+
+    void kite(RobotInfo[] enemyInfo) throws GameActionException {
+        if (util.countNearbyEnemyAttackers(enemyInfo) == 0) {
+            MapLocation target = util.lowestHealthTarget();
+            if (target != null) {
+                nav.moveTowards(target);
+            }
+        } else {
+            int x = myLoc.x;
+            int y = myLoc.y;
+            double force_x = 0;
+            double force_y = 0;
+            for (RobotInfo info : enemyInfo) {
+                switch (info.type) {
+                    case SAGE:
+                        force_x += (double) (x - info.location.x) / myLoc.distanceSquaredTo(info.location);
+                        force_y += (double) (y - info.location.y) / myLoc.distanceSquaredTo(info.location);
+                        break;
+                    case SOLDIER:
+                        force_x += 1.25 * (double) (x - info.location.x) / myLoc.distanceSquaredTo(info.location);
+                        force_y += 1.25 * (double) (y - info.location.y) / myLoc.distanceSquaredTo(info.location);
+                        break;
+                    case WATCHTOWER:
+                        force_x += 1.5 * (double) (x - info.location.x) / myLoc.distanceSquaredTo(info.location);
+                        force_y += 1.5 * (double) (y - info.location.y) / myLoc.distanceSquaredTo(info.location);
+                        break;
+                    default:
+                        break;
+                }
+            }
+            MapLocation forceResult = myLoc.translate(100 * (int) force_x, 100 * (int) force_y);
+            nav.moveTowards(forceResult);
         }
     }
 
