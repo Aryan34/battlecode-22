@@ -140,18 +140,21 @@ public class Navigation {
         return greedy(loc);
     }
 
-    // prioritizes low rubble tiles to best enable for defensive combat
-    boolean retreatTowards(MapLocation loc) throws GameActionException {
+    boolean retreatTowards(Direction retreatDir) throws GameActionException {
         if (!rc.isMovementReady()) {
             return false;
         }
 
+        RobotType myType = rc.getType();
         MapLocation myLoc = rc.getLocation();
-        Direction retreatDir = myLoc.directionTo(loc);
-        Direction bestDir = null;
+        Direction bestDir = retreatDir;
 
-        // if rubble at myLoc is the least, then droid will stay put and fight => most dmg done to enemy
+        // if rubble at myLoc is the least, then attack-type droid will stay put and fight => most dmg done to enemy
         int leastRubble = rc.senseRubble(myLoc);
+        if (myType == RobotType.BUILDER || myType == RobotType.MINER) {
+            leastRubble = 1000;
+        }
+
         for (Direction dir : closeDirections(retreatDir)) {
             MapLocation newLoc = myLoc.add(dir);
             if (rc.onTheMap(newLoc) && rc.canSenseLocation(newLoc)) {
@@ -162,7 +165,7 @@ public class Navigation {
             }
         }
 
-        if (bestDir != null && rc.canMove(bestDir)) {
+        if (rc.canMove(bestDir)) {
             rc.move(bestDir);
             return true;
         }
@@ -198,37 +201,57 @@ public class Navigation {
     }
 
     boolean retreatFromEnemies(RobotInfo[] enemyInfo) throws GameActionException {
-        if (!rc.isMovementReady()) {
+        if (!rc.isMovementReady() || enemyInfo.length == 0) {
             return false;
         }
 
-        MapLocation myLoc = rc.getLocation();
-        int x = myLoc.x;
-        int y = myLoc.y;
-        double force_x = 0;
-        double force_y = 0;
+        double lowestHeuristic = 10000;
+        Direction bestDir = null;
 
-        for (RobotInfo info : enemyInfo) {
-            switch (info.type) {
-                case SAGE:
-                    force_x += (double) (x - info.location.x) / myLoc.distanceSquaredTo(info.location);
-                    force_y += (double) (y - info.location.y) / myLoc.distanceSquaredTo(info.location);
-                    break;
-                case SOLDIER:
-                    force_x += 1.25 * (double) (x - info.location.x) / myLoc.distanceSquaredTo(info.location);
-                    force_y += 1.25 * (double) (y - info.location.y) / myLoc.distanceSquaredTo(info.location);
-                    break;
-                case WATCHTOWER:
-                    force_x += 1.5 * (double) (x - info.location.x) / myLoc.distanceSquaredTo(info.location);
-                    force_y += 1.5 * (double) (y - info.location.y) / myLoc.distanceSquaredTo(info.location);
-                    break;
-                default:
-                    break;
+        for (Direction dir : directions) {
+            if (!rc.canMove(dir) || !rc.onTheMap(rc.getLocation().add(dir))) {
+                continue;
+            }
+
+            double heuristic = retreatHeuristic(enemyInfo, rc.getLocation().add(dir));
+
+            if (heuristic < lowestHeuristic) {
+                lowestHeuristic = heuristic;
+                bestDir = dir;
             }
         }
 
-        MapLocation forceResult = myLoc.translate(100 * (int) force_x, 100 * (int) force_y);
-        return retreatTowards(forceResult);
+        if (bestDir != null && rc.canMove(bestDir)) {
+            return retreatTowards(bestDir);
+        }
+        return false;
+    }
+
+    double retreatHeuristic(RobotInfo[] enemyInfo, MapLocation loc) {
+        double heuristic = 0;
+        double multiplier;
+        int dist;
+
+        for (RobotInfo info : enemyInfo) {
+            dist = loc.distanceSquaredTo(info.location);
+            switch (info.type) {
+                case SAGE:
+                    multiplier = 1.0;
+                    break;
+                case SOLDIER:
+                    multiplier = 1.25;
+                    break;
+                case WATCHTOWER:
+                    multiplier = 1.5;
+                    break;
+                default:
+                    multiplier = 0;
+                    break;
+            }
+            heuristic += (1.0 /dist) * multiplier;
+        }
+
+        return heuristic;
     }
 
     // treat all rubble above threshold as impassable, otherwise move towards target
@@ -246,30 +269,15 @@ public class Navigation {
         Direction bestDir = null;
 
         MapLocation enemyLoc = null;
-        int enemyDist = 10000;
-        for (RobotInfo info : rc.senseNearbyRobots(rc.getType().visionRadiusSquared, rc.getTeam().opponent())) {
-            if (info.type == RobotType.SOLDIER || info.type == RobotType.SAGE || info.type == RobotType.WATCHTOWER) {
-                int dist = myLoc.distanceSquaredTo(info.location);
-                if (dist < info.type.actionRadiusSquared && dist < enemyDist) {
-                    enemyDist = dist;
-                    enemyLoc = info.location;
-                }
-            }
-        }
-
-        if (enemyLoc != null) {
-            bestDir = myLoc.directionTo(enemyLoc).opposite();
-        } else {
-            Direction[] closeDirs = evenCloserDirections(myLoc.directionTo(target));
-            for (Direction dir : closeDirs) {
-                int newDist = myLoc.add(dir).distanceSquaredTo(target);
-                if (rc.canMove(dir) && newDist < currDist) {
-                    if (bestDir == null || rc.senseRubble(myLoc.add(dir)) < minRubble ||
-                            (rc.senseRubble(myLoc.add(dir)) == minRubble && newDist < bestDist)) {
-                        bestDist = newDist;
-                        minRubble = rc.senseRubble(myLoc.add(dir));
-                        bestDir = dir;
-                    }
+        Direction[] closeDirs = evenCloserDirections(myLoc.directionTo(target));
+        for (Direction dir : closeDirs) {
+            int newDist = myLoc.add(dir).distanceSquaredTo(target);
+            if (rc.canMove(dir) && newDist < currDist) {
+                if (bestDir == null || rc.senseRubble(myLoc.add(dir)) < minRubble ||
+                        (rc.senseRubble(myLoc.add(dir)) == minRubble && newDist < bestDist)) {
+                    bestDist = newDist;
+                    minRubble = rc.senseRubble(myLoc.add(dir));
+                    bestDir = dir;
                 }
             }
         }

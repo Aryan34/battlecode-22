@@ -13,9 +13,14 @@ public class Miner extends Robot {
         searchTarget = null;
     }
 
+    // TODO: as you get further from the parentLoc, explore less aggressively
     void playTurn() throws GameActionException {
         super.playTurn();
-        nav.retreatFromEnemies(rc.senseNearbyRobots(myType.visionRadiusSquared, opponentTeam));
+
+        RobotInfo[] nearbyEnemies = rc.senseNearbyRobots(myType.visionRadiusSquared, opponentTeam);
+        if (nearbyEnemies.length != 0) {
+            nav.retreatFromEnemies(nearbyEnemies);
+        }
 
         // TODO: possibly research for best tile each time we mine, instead of mining multiple times at the same loc
         MapLocation neighboringDepositLoc = largestNeighboringDeposit(true);

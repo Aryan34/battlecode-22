@@ -81,7 +81,14 @@ public class Soldier extends Robot {
         if (util.countNearbyEnemyAttackers(enemyInfo) == 0) {
             MapLocation target = util.lowestHealthTarget();
             if (target != null) {
-                nav.moveTowards(target);
+                if (myLoc.distanceSquaredTo(target) > 2) {
+                    nav.moveTowards(target);
+                } else {
+                    Direction dir = directionToLowestRubbleTile(target);
+                    if (rc.canMove(dir)) {
+                        rc.move(dir);
+                    }
+                }
             }
         } else if (util.countNearbyEnemyAttackers(enemyInfo) == 1) {
             MapLocation target = util.getAttackerLocation(enemyInfo);
@@ -145,6 +152,31 @@ public class Soldier extends Robot {
                 rc.writeSharedArray(18, 0);
             }
         }
+    }
+
+    Direction directionToLowestRubbleTile(MapLocation target) throws GameActionException {
+        if (!rc.isMovementReady()) {
+            return null;
+        }
+
+        Direction bestDir = Direction.CENTER;
+        int lowestRubble = rc.senseRubble(myLoc);
+        int lowestDistance = 100;
+
+        for (Direction dir : Navigation.directions) {
+            MapLocation dest = myLoc.add(dir);
+            if (rc.canMove(dir) && rc.onTheMap(dest)) {
+                int rubble = rc.senseRubble(dest);
+                if (rubble < lowestRubble ||
+                        (rubble == lowestRubble && dest.distanceSquaredTo(target) < lowestDistance)) {
+                    bestDir = dir;
+                    lowestRubble = rubble;
+                    lowestDistance = dest.distanceSquaredTo(target);
+                }
+            }
+        }
+
+        return bestDir;
     }
 
     MapLocation randomAttackTarget() throws GameActionException {
