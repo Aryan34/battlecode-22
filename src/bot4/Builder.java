@@ -27,6 +27,11 @@ public class Builder extends Robot {
         super.playTurn();
         nav.retreatFromEnemies(rc.senseNearbyRobots(myType.visionRadiusSquared, opponentTeam));
 
+        // move away from archon to allow it to continue building troops
+        if (parentLoc != null && myLoc.distanceSquaredTo(parentLoc) <= 2) {
+            nav.moveAwayFromArchon(parentLoc);
+        }
+
         switch (mode) {
             case BUILD_LATTICE:
                 buildLattice();

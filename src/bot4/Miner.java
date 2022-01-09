@@ -18,56 +18,51 @@ public class Miner extends Robot {
         nav.retreatFromEnemies(rc.senseNearbyRobots(myType.visionRadiusSquared, opponentTeam));
 
         // move away from archon to allow it to continue building troops
-        if (2 < turnCount && turnCount < 20 && parentLoc != null && myLoc.distanceSquaredTo(parentLoc) <= 2) {
-            nav.moveAway(parentLoc);
+        if (parentLoc != null && myLoc.distanceSquaredTo(parentLoc) <= 2) {
+            nav.moveAwayFromArchon(parentLoc);
         }
 
-        MapLocation neighboringDepositLoc = findOptimalNeighboringDeposit();
+        // TODO: possibly research for best tile each time we mine, instead of mining multiple times at the same loc
+        MapLocation neighboringDepositLoc = largestNeighboringDeposit(true);
         if (neighboringDepositLoc != null) {
-            while (rc.senseLead(neighboringDepositLoc) > 1 && rc.canMineLead(neighboringDepositLoc)) {
+            while ((rc.senseGold(neighboringDepositLoc) > 0 && rc.canMineGold(neighboringDepositLoc)) ||
+                    (rc.senseLead(neighboringDepositLoc) > 1 && rc.canMineLead(neighboringDepositLoc))) {
                 rc.mineLead(neighboringDepositLoc);
             }
-        } else {
-            MapLocation depositLoc = findOptimalDeposit();
-            if (depositLoc != null) {
-                if (!nav.moveTowards(depositLoc)) {
-                    brownian();
-                }
-            } else if (turnCount % 5 == 0) {
+        }
+
+        MapLocation depositLoc = largestDeposit(true);
+        if (depositLoc != null) {
+            if (!nav.moveTowards(depositLoc)) {
                 brownian();
-            } else if (searchTarget == null || myLoc.distanceSquaredTo(searchTarget) < myType.visionRadiusSquared) {
-                searchTarget = randomSearchTarget();
             }
-
-            if (searchTarget != null) {
-                if (!nav.moveTowards(searchTarget)) {
-                    brownian();
-                }
-            }
+        } else {
+            brownian();
         }
     }
 
-    MapLocation randomSearchTarget() throws GameActionException {
-        switch (rc.getID() % 3) {
-            case 0:
-                return nav.reflectHoriz(parentLoc);
-            case 1:
-                return nav.reflectVert(parentLoc);
-            case 2:
-                return nav.reflectDiag(parentLoc);
-        }
-
-        return nav.reflectDiag(parentLoc);
-    }
-
-    MapLocation findOptimalDeposit() throws GameActionException {
+    // true: consider gold deposits as well (gold weighted at highestLead * 5); false: only looks for lead deposits
+    MapLocation largestDeposit(boolean searchForGold) throws GameActionException {
         MapLocation depositLoc = null;
-        int optimalDepositValue = -100000;
+        int highestGold = 0;
+        int highestLead = 0; // TODO: maybe set to -25 to allow for neg. values too?
+
         for (MapLocation loc : rc.senseNearbyLocationsWithLead(RobotType.MINER.visionRadiusSquared)) {
             if (rc.senseLead(loc) >= 10) {
-                int value = rc.senseLead(loc) - (2 * myLoc.distanceSquaredTo(loc));
-                if (value > optimalDepositValue) {
-                    optimalDepositValue = value;
+                int value = rc.senseLead(loc) - myLoc.distanceSquaredTo(loc);
+                if (value > highestLead) {
+                    highestLead = value;
+                    depositLoc = loc;
+                }
+            }
+        }
+
+        if (searchForGold) {
+            highestGold = highestLead * 5; // TODO: once we get better lab code, find a better constant than 5
+            for (MapLocation loc : rc.senseNearbyLocationsWithGold(RobotType.MINER.visionRadiusSquared)) {
+                int value = rc.senseGold(loc) - myLoc.distanceSquaredTo(loc);
+                if (value > highestGold) {
+                    highestGold = value;
                     depositLoc = loc;
                 }
             }
@@ -76,16 +71,31 @@ public class Miner extends Robot {
         return depositLoc;
     }
 
-    MapLocation findOptimalNeighboringDeposit() throws GameActionException {
+    // true: if gold nearby, mine that first; false: ignore gold, only mine lead
+    MapLocation largestNeighboringDeposit(boolean searchForGold) throws GameActionException {
         MapLocation depositLoc = null;
-        int optimalDepositValue = 1;
-        for (MapLocation loc : rc.senseNearbyLocationsWithLead(RobotType.MINER.actionRadiusSquared)) {
-            if (rc.senseLead(loc) >= 10) {
+        int highestGold = 0;
+        int highestLead = 9;
+
+        if (searchForGold) {
+            for (MapLocation loc : rc.senseNearbyLocationsWithGold(myType.actionRadiusSquared)) {
                 int value = rc.senseLead(loc);
-                if (value > optimalDepositValue) {
-                    optimalDepositValue = value;
+                if (value > highestGold) {
+                    highestGold = value;
                     depositLoc = loc;
                 }
+            }
+        }
+
+        if (depositLoc != null) {
+            return depositLoc;
+        }
+
+        for (MapLocation loc : rc.senseNearbyLocationsWithLead(myType.actionRadiusSquared)) {
+            int value = rc.senseLead(loc);
+            if (value > highestLead) {
+                highestLead = value;
+                depositLoc = loc;
             }
         }
 

@@ -95,6 +95,43 @@ public class Navigation {
         return false;
     }
 
+    boolean moveAwayFromArchon(MapLocation loc) throws GameActionException {
+        if (!rc.isMovementReady()) {
+            return false;
+        }
+
+        int bestMoveRubble = 1000;
+        int bestMoveLead = -1000;
+        Direction bestDir = null;
+        MapLocation myLoc = rc.getLocation();
+
+        for (Direction dir : directions) {
+            MapLocation dest = myLoc.add(dir);
+            int moveRubble = rc.senseRubble(dest);
+            int moveLead = rc.senseLead(dest);
+
+            if (!rc.onTheMap(dest) || !rc.canMove(dir) || dest.distanceSquaredTo(loc) <= 2) {
+                continue;
+            }
+
+            if (moveRubble < bestMoveRubble) {
+                bestMoveRubble = moveRubble;
+                bestMoveLead = moveLead;
+                bestDir = dir;
+            } else if (5 * (moveRubble - bestMoveRubble) < (moveLead - bestMoveLead)) {
+                bestMoveRubble = moveRubble;
+                bestMoveLead = moveLead;
+                bestDir = dir;
+            }
+        }
+
+        if (bestDir != null && rc.canMove(bestDir)) {
+            rc.move(bestDir);
+            return true;
+        }
+        return false;
+    }
+
     boolean moveTowards(MapLocation loc) throws GameActionException {
         if (!rc.isMovementReady()) {
             return false;
