@@ -6,10 +6,10 @@ public class Archon extends Robot {
     static RobotType[] buildOrder1 = {
             RobotType.SOLDIER,
             RobotType.SOLDIER,
+            RobotType.SOLDIER,
+            RobotType.SOLDIER,
+            RobotType.SOLDIER,
             RobotType.MINER,
-            RobotType.SOLDIER,
-            RobotType.SOLDIER,
-            RobotType.BUILDER,
             RobotType.SOLDIER,
             RobotType.SOLDIER,
             RobotType.MINER,

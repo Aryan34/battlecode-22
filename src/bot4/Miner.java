@@ -15,7 +15,7 @@ public class Miner extends Robot {
 
     void playTurn() throws GameActionException {
         super.playTurn();
-        nav.runFromEnemies();
+        nav.retreatFromEnemies(rc.senseNearbyRobots(myType.visionRadiusSquared, opponentTeam));
 
         // move away from archon to allow it to continue building troops
         if (2 < turnCount && turnCount < 20 && parentLoc != null && myLoc.distanceSquaredTo(parentLoc) <= 2) {

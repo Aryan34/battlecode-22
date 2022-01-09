@@ -233,4 +233,14 @@ public class Util {
 
         return count;
     }
+
+    MapLocation getAttackerLocation(RobotInfo[] enemyInfo) {
+        for (RobotInfo info : enemyInfo) {
+            if (info.type == RobotType.SAGE || info.type == RobotType.SOLDIER || info.type == RobotType.WATCHTOWER) {
+                return info.location;
+            }
+        }
+
+        return null;
+    }
 }

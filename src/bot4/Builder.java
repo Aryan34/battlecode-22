@@ -25,7 +25,7 @@ public class Builder extends Robot {
 
     void playTurn() throws GameActionException {
         super.playTurn();
-        nav.runFromEnemies();
+        nav.retreatFromEnemies(rc.senseNearbyRobots(myType.visionRadiusSquared, opponentTeam));
 
         switch (mode) {
             case BUILD_LATTICE:

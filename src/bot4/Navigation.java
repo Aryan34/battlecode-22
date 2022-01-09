@@ -103,6 +103,35 @@ public class Navigation {
         return greedy(loc);
     }
 
+    // prioritizes low rubble tiles to best enable for defensive combat
+    boolean retreatTowards(MapLocation loc) throws GameActionException {
+        if (!rc.isMovementReady()) {
+            return false;
+        }
+
+        MapLocation myLoc = rc.getLocation();
+        Direction retreatDir = myLoc.directionTo(loc);
+        Direction bestDir = null;
+
+        // if rubble at myLoc is the least, then droid will stay put and fight => most dmg done to enemy
+        int leastRubble = rc.senseRubble(myLoc);
+        for (Direction dir : closeDirections(retreatDir)) {
+            MapLocation newLoc = myLoc.add(dir);
+            if (rc.onTheMap(newLoc) && rc.canSenseLocation(newLoc)) {
+                if (rc.senseRubble(newLoc) < leastRubble) {
+                    leastRubble = rc.senseRubble(newLoc);
+                    bestDir = dir;
+                }
+            }
+        }
+
+        if (bestDir != null && rc.canMove(bestDir)) {
+            rc.move(bestDir);
+            return true;
+        }
+        return false;
+    }
+
     boolean moveAway(MapLocation loc) throws GameActionException {
         if (!rc.isMovementReady()) {
             return false;
@@ -131,27 +160,38 @@ public class Navigation {
         return false;
     }
 
-    boolean runFromEnemies() throws GameActionException {
+    boolean retreatFromEnemies(RobotInfo[] enemyInfo) throws GameActionException {
         if (!rc.isMovementReady()) {
             return false;
         }
 
-        MapLocation enemyLoc = null;
-        int enemyDist = 10000;
-        for (RobotInfo info : rc.senseNearbyRobots(rc.getType().visionRadiusSquared, rc.getTeam().opponent())) {
-            if (info.type == RobotType.SOLDIER || info.type == RobotType.SAGE || info.type == RobotType.WATCHTOWER) {
-                int dist = rc.getLocation().distanceSquaredTo(info.location);
-                if (dist < enemyDist) {
-                    enemyDist = dist;
-                    enemyLoc = info.location;
-                }
+        MapLocation myLoc = rc.getLocation();
+        int x = myLoc.x;
+        int y = myLoc.y;
+        double force_x = 0;
+        double force_y = 0;
+
+        for (RobotInfo info : enemyInfo) {
+            switch (info.type) {
+                case SAGE:
+                    force_x += (double) (x - info.location.x) / myLoc.distanceSquaredTo(info.location);
+                    force_y += (double) (y - info.location.y) / myLoc.distanceSquaredTo(info.location);
+                    break;
+                case SOLDIER:
+                    force_x += 1.25 * (double) (x - info.location.x) / myLoc.distanceSquaredTo(info.location);
+                    force_y += 1.25 * (double) (y - info.location.y) / myLoc.distanceSquaredTo(info.location);
+                    break;
+                case WATCHTOWER:
+                    force_x += 1.5 * (double) (x - info.location.x) / myLoc.distanceSquaredTo(info.location);
+                    force_y += 1.5 * (double) (y - info.location.y) / myLoc.distanceSquaredTo(info.location);
+                    break;
+                default:
+                    break;
             }
         }
 
-        if (enemyLoc != null) {
-            return moveAway(enemyLoc);
-        }
-        return false;
+        MapLocation forceResult = myLoc.translate(100 * (int) force_x, 100 * (int) force_y);
+        return retreatTowards(forceResult);
     }
 
     // treat all rubble above threshold as impassable, otherwise move towards target

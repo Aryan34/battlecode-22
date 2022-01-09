@@ -79,31 +79,13 @@ public class Soldier extends Robot {
             if (target != null) {
                 nav.moveTowards(target);
             }
-        } else {
-            int x = myLoc.x;
-            int y = myLoc.y;
-            double force_x = 0;
-            double force_y = 0;
-            for (RobotInfo info : enemyInfo) {
-                switch (info.type) {
-                    case SAGE:
-                        force_x += (double) (x - info.location.x) / myLoc.distanceSquaredTo(info.location);
-                        force_y += (double) (y - info.location.y) / myLoc.distanceSquaredTo(info.location);
-                        break;
-                    case SOLDIER:
-                        force_x += 1.25 * (double) (x - info.location.x) / myLoc.distanceSquaredTo(info.location);
-                        force_y += 1.25 * (double) (y - info.location.y) / myLoc.distanceSquaredTo(info.location);
-                        break;
-                    case WATCHTOWER:
-                        force_x += 1.5 * (double) (x - info.location.x) / myLoc.distanceSquaredTo(info.location);
-                        force_y += 1.5 * (double) (y - info.location.y) / myLoc.distanceSquaredTo(info.location);
-                        break;
-                    default:
-                        break;
-                }
+        } else if (util.countNearbyEnemyAttackers(enemyInfo) == 1) {
+            MapLocation target = util.getAttackerLocation(enemyInfo);
+            if (target != null) {
+                nav.moveTowards(target);
             }
-            MapLocation forceResult = myLoc.translate(100 * (int) force_x, 100 * (int) force_y);
-            nav.moveTowards(forceResult);
+        } else {
+            nav.retreatFromEnemies(enemyInfo);
         }
     }
 
