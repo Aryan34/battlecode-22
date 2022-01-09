@@ -9,14 +9,12 @@ public class Soldier extends Robot {
         DEFEND
     }
 
-    static final int ATTACK_COUNT_THRESHOLD = 15;
+    static final int ATTACK_COUNT_THRESHOLD = 10;
 
     Mode mode;
 
     MapLocation possibleArchonLoc = null;
     MapLocation definiteArchonLoc = null;
-
-    boolean incrementedAttackerCount = false;
 
     public Soldier(RobotController rc) {
         super(rc);
@@ -66,11 +64,8 @@ public class Soldier extends Robot {
             if (myLoc.distanceSquaredTo(definiteArchonLoc) > 35) {
                 nav.moveTowards(definiteArchonLoc);
             } else {
-                int attackerCount = rc.readSharedArray(18);
-                if (!incrementedAttackerCount) {
-                    rc.writeSharedArray(18, ++attackerCount);
-                    incrementedAttackerCount = true;
-                }
+                int attackerCount= util.countNearbyFriendlyTroops(RobotType.SOLDIER);
+                System.out.println("ATTACKER COUNT: " + attackerCount);
                 if (attackerCount >= ATTACK_COUNT_THRESHOLD) {
                     nav.moveTowards(definiteArchonLoc);
                 } else {
@@ -149,31 +144,6 @@ public class Soldier extends Robot {
                 rc.writeSharedArray(18, 0);
             }
         }
-    }
-
-    void checkAttackPossible() throws GameActionException {
-        if (countNearbyAllies() < ATTACK_COUNT_THRESHOLD) {
-            return;
-        }
-
-        MapLocation[] enemyArchonLocs = comms.getEnemyArchonLocs();
-        for (int i = 0; i < 4; ++i) {
-            MapLocation archonLoc = enemyArchonLocs[i];
-            if (archonLoc != null) {
-                comms.chooseTargetEnemyArchon(i);
-            }
-        }
-    }
-
-    int countNearbyAllies() throws GameActionException {
-        int count = 0;
-        for (RobotInfo info : rc.senseNearbyRobots(myType.visionRadiusSquared, myTeam)) {
-            if (info.type == RobotType.SOLDIER) {
-                ++count;
-            }
-        }
-
-        return count;
     }
 
     MapLocation randomAttackTarget() throws GameActionException {

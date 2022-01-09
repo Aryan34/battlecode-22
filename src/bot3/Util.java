@@ -139,4 +139,26 @@ public class Util {
 
         return repairLoc;
     }
+
+    int countNearbyFriendlyTroops(RobotType type) {
+        int count = 0;
+        for (RobotInfo info : rc.senseNearbyRobots(rc.getType().visionRadiusSquared, rc.getTeam())) {
+            if (info.type == type) {
+                ++count;
+            }
+        }
+
+        return count;
+    }
+
+    int countNearbyEnemyTroops(RobotType type) {
+        int count = 0;
+        for (RobotInfo info : rc.senseNearbyRobots(rc.getType().visionRadiusSquared, rc.getTeam().opponent())) {
+            if (info.type == type) {
+                ++count;
+            }
+        }
+
+        return count;
+    }
 }

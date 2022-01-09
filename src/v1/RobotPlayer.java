@@ -67,10 +67,8 @@ public strictfp class RobotPlayer {
 
         // Hello world! Standard output is very useful for debugging.
         // Everything you say here will be directly viewable in your terminal when you run a match!
-        System.out.println("I'm a " + rc.getType() + " and I just got created! I have health " + rc.getHealth());
 
         // You can also use indicators to save debug notes in replays.
-        rc.setIndicatorString("Hello world!");
 
         while (true) {
             // This code runs during the entire lifespan of the robot, which is why it is in an infinite
@@ -78,7 +76,6 @@ public strictfp class RobotPlayer {
             // loop, we call Clock.yield(), signifying that we've done everything we want to do.
 
             turnCount += 1;  // We have now been alive for one more turn!
-            System.out.println("Age: " + turnCount + "; Location: " + rc.getLocation());
 
             // Try/catch blocks stop unhandled exceptions, which cause your robot to explode.
             try {
@@ -99,13 +96,11 @@ public strictfp class RobotPlayer {
                 // Oh no! It looks like we did something illegal in the Battlecode world. You should
                 // handle GameActionExceptions judiciously, in case unexpected events occur in the game
                 // world. Remember, uncaught exceptions cause your robot to explode!
-                System.out.println(rc.getType() + " Exception");
                 e.printStackTrace();
 
             } catch (Exception e) {
                 // Oh no! It looks like our code tried to do something bad. This isn't a
                 // GameActionException, so it's more likely to be a bug in our code.
-                System.out.println(rc.getType() + " Exception");
                 e.printStackTrace();
 
             } finally {
@@ -265,14 +260,12 @@ public strictfp class RobotPlayer {
 
         // if (!stay && rc.canMove(dir)) {
         //     rc.move(dir);
-        //     System.out.println("I moved!");
         // }
     //else if (stay){
         if (count<2){
             Direction dir2 = directions[rng.nextInt(directions.length)];
             if (rc.canMove(dir2)) {
                 rc.move(dir2);
-                System.out.println("I moved!");
             }
         }
         
@@ -327,13 +320,11 @@ public strictfp class RobotPlayer {
         if (rc.senseNearbyRobots(radius, rc.getTeam()).length>7){
             if (rc.canMove(dir)) {
                 rc.move(dir);
-                //System.out.println("I moved!");
             }
             else {
                 dir = directions[rng.nextInt(directions.length)] ;
                 if (rc.canMove(dir)) {
                     rc.move(dir);
-                    //System.out.println("I moved!");
                 }
             }
         }
@@ -410,7 +401,6 @@ public strictfp class RobotPlayer {
         Direction dir2 = directions[rng.nextInt(directions.length)];
         if (!dontmove && rc.canMove(dir2)) {
             rc.move(dir2);
-            System.out.println("I moved!");
         }
     }
 
@@ -457,13 +447,11 @@ public strictfp class RobotPlayer {
         Direction dir = rc.getLocation().directionTo(temp);
         if (rc.canMove(dir)) {
             rc.move(dir);
-            //System.out.println("I moved!");
         }
         else {
             dir = directions[rng.nextInt(directions.length)] ;
             if (rc.canMove(dir)) {
                 rc.move(dir);
-                //System.out.println("I moved!");
             }
         }
     }
