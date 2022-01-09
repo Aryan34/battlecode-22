@@ -23,11 +23,6 @@ public class Soldier extends Robot {
     void playTurn() throws GameActionException {
         super.playTurn();
 
-        // move away from archon to allow it to continue building troops
-        if (parentLoc != null && myLoc.distanceSquaredTo(parentLoc) <= 2) {
-            nav.moveAwayFromArchon(parentLoc);
-        }
-
         switch (mode) {
             case ATTACK:
                 attack();
@@ -73,6 +68,10 @@ public class Soldier extends Robot {
         }
     }
 
+    void defend() throws GameActionException {
+        brownian();
+    }
+
     void fight(RobotInfo[] enemyInfo) throws GameActionException {
         kite(enemyInfo);
         optimalAttack();
@@ -92,10 +91,6 @@ public class Soldier extends Robot {
         } else {
             nav.retreatFromEnemies(enemyInfo);
         }
-    }
-
-    void defend() throws GameActionException {
-        brownian();
     }
 
     void optimalAttack() throws GameActionException {

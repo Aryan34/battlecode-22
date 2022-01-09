@@ -17,11 +17,6 @@ public class Miner extends Robot {
         super.playTurn();
         nav.retreatFromEnemies(rc.senseNearbyRobots(myType.visionRadiusSquared, opponentTeam));
 
-        // move away from archon to allow it to continue building troops
-        if (parentLoc != null && myLoc.distanceSquaredTo(parentLoc) <= 2) {
-            nav.moveAwayFromArchon(parentLoc);
-        }
-
         // TODO: possibly research for best tile each time we mine, instead of mining multiple times at the same loc
         MapLocation neighboringDepositLoc = largestNeighboringDeposit(true);
         if (neighboringDepositLoc != null) {
@@ -31,14 +26,13 @@ public class Miner extends Robot {
             }
         }
 
+        // TODO: in move towards, favor directions that have better neighboring deposits
         MapLocation depositLoc = largestDeposit(true);
         if (depositLoc != null) {
-            if (!nav.moveTowards(depositLoc)) {
-                brownian();
-            }
-        } else {
-            brownian();
+            nav.moveTowards(depositLoc);
         }
+
+        brownian();
     }
 
     // true: consider gold deposits as well (gold weighted at highestLead * 5); false: only looks for lead deposits
