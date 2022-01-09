@@ -12,12 +12,19 @@ public class Soldier extends Robot {
 
     Mode mode;
 
+    int modulus;
+
     MapLocation possibleArchonLoc = null;
     MapLocation definiteArchonLoc = null;
 
     public Soldier(RobotController rc) {
         super(rc);
         mode = Mode.ATTACK;
+
+        modulus = 3 + (roundNum / 100);
+        if (rc.getID() % modulus == 0) {
+            mode = Mode.DEFEND;
+        }
     }
 
     void playTurn() throws GameActionException {
@@ -69,6 +76,10 @@ public class Soldier extends Robot {
     }
 
     void defend() throws GameActionException {
+        fight(rc.senseNearbyRobots(myType.visionRadiusSquared, opponentTeam));
+        if (myLoc.distanceSquaredTo(parentLoc) > RobotType.ARCHON.visionRadiusSquared) {
+            nav.moveTowards(parentLoc);
+        }
         brownian();
     }
 
@@ -85,14 +96,15 @@ public class Soldier extends Robot {
                     nav.moveTowards(target);
                 } else {
                     Direction dir = directionToLowestRubbleTile(target);
-                    if (rc.canMove(dir)) {
+                    if (dir != null && rc.canMove(dir)) {
                         rc.move(dir);
                     }
                 }
             }
         } else if (util.countNearbyEnemyAttackers(enemyInfo) == 1) {
             MapLocation target = util.getAttackerLocation(enemyInfo);
-            if (target != null) {
+            RobotInfo enemy = rc.senseRobotAtLocation(target);
+            if (target != null && enemy != null && enemy.health <= rc.getHealth()) {
                 nav.moveTowards(target);
             }
         } else {
