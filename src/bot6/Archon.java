@@ -117,9 +117,9 @@ public class Archon extends Robot {
 
         if (enemySoldierSensed) {
             followBuildOrder(buildOrder1);
-        } else if (comms.getRobotCount(RobotType.MINER) < 12) {
+        } else if (comms.getRobotCount(RobotType.MINER) < rc.getArchonCount() * 4) {
             followBuildOrder(buildOrder4);
-        } else if (roundNum < 150 && rc.getTeamLeadAmount(myTeam) < 500) {
+        } else if (roundNum < 150 && rc.getTeamLeadAmount(myTeam) < RobotType.SOLDIER.buildCostLead * rc.getArchonCount()) {
             followBuildOrder(buildOrder3);
         } else {
             if (teamLead > 750 && buildersSpawned < 8) {
@@ -128,6 +128,9 @@ public class Archon extends Robot {
                 followBuildOrder(buildOrder5);
             }
         }
+
+        // TODO: make this more efficient so archons split the clearing work evenly
+        comms.clearEnemyLocations(36);
     }
 
     void followBuildOrder(RobotType[] buildOrder) throws GameActionException {

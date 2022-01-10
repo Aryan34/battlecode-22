@@ -78,6 +78,7 @@ public class Robot {
         updateBounds();
         updateLifeStatus();
         searchForEnemyArchon();
+        reportEnemyLocs();
 
         ++turnCount;
     }
@@ -122,6 +123,18 @@ public class Robot {
             }
         } else if (comms.possibleEnemyArchonCount() == rc.getArchonCount()) {
             enemyArchonCountFlag = true;
+        }
+    }
+
+    void reportEnemyLocs() throws GameActionException {
+        // TODO: with current reset mechanic, archons cannot report enemy locs
+        if (myType == RobotType.ARCHON) {
+            return;
+        }
+
+        MapLocation target = util.closestTarget();
+        if (target != null) {
+            comms.addEnemyLocation(target);
         }
     }
 
