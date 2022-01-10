@@ -19,11 +19,6 @@ public class Soldier extends Robot {
     public Soldier(RobotController rc) {
         super(rc);
         mode = Mode.ATTACK;
-
-        int modulus = 3 + (roundNum / 100);
-        if (rc.getID() % modulus == 0) {
-            mode = Mode.DEFEND;
-        }
     }
 
     void playTurn() throws GameActionException {
@@ -52,13 +47,14 @@ public class Soldier extends Robot {
         }
 
         if (possibleLoc != null) {
-            if (myLoc.distanceSquaredTo(possibleLoc) > 0) {
+            if (myLoc.distanceSquaredTo(possibleLoc) > 35) {
                 nav.moveTowards(possibleLoc);
             } else {
                 int attackerCount = util.countNearbyFriendlyTroops(RobotType.SOLDIER);
                 if (attackerCount >= ATTACK_COUNT_THRESHOLD) {
                     nav.moveTowards(possibleLoc);
                 } else {
+                    kite(rc.senseNearbyRobots(myType.visionRadiusSquared, opponentTeam));
                     nav.moveRandom();
                 }
             }
