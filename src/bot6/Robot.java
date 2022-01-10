@@ -75,7 +75,14 @@ public class Robot {
             comms.updateRobotCount(myType, 1);
         }
 
-        // for brownian
+        updateBounds();
+        updateLifeStatus();
+        searchForEnemyArchon();
+
+        ++turnCount;
+    }
+
+    void updateBounds() {
         if (rc.canSenseLocation(new MapLocation(low_x_bound - 1, myLoc.y))) {
             low_x_bound--;
         }
@@ -88,7 +95,9 @@ public class Robot {
         if (rc.canSenseLocation(new MapLocation(myLoc.x, high_y_bound + 1))) {
             high_y_bound++;
         }
+    }
 
+    void updateLifeStatus() throws GameActionException {
         if (!considerDead && rc.getHealth() < 6) {
             considerDead = true;
             comms.updateRobotCount(myType, -1);
@@ -96,7 +105,9 @@ public class Robot {
             considerDead = false;
             comms.updateRobotCount(myType, 1);
         }
+    }
 
+    void searchForEnemyArchon() throws GameActionException {
         if (roundNum > 1 && !enemyArchonCountFlag && comms.possibleEnemyArchonCount() != rc.getArchonCount()) {
             MapLocation[] guesses = comms.getEnemyArchonLocs();
             for (MapLocation loc : guesses) {
@@ -112,8 +123,6 @@ public class Robot {
         } else if (comms.possibleEnemyArchonCount() == rc.getArchonCount()) {
             enemyArchonCountFlag = true;
         }
-
-        ++turnCount;
     }
 
     boolean brownian() throws GameActionException {
