@@ -34,7 +34,6 @@ public strictfp class RobotPlayer {
 
         while (true) {
             try {
-                if (rc.getRoundNum() == 500) rc.resign();
                 robot.playTurn();
             } catch (GameActionException e) {
                 System.out.println(rc.getType() + " GameActionException");
