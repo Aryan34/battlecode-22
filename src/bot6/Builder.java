@@ -74,7 +74,6 @@ public class Builder extends Robot {
             for (Direction dir : Navigation.directions) {
                 MapLocation watchtowerLoc = myLoc.add(dir);
                 if (isLatticeTile(watchtowerLoc)) {
-                    System.out.println("THIS LOC IS A LATTICE LOC: " + watchtowerLoc);
                     if (watchtowerLoc.distanceSquaredTo(parentLoc) > 2 && rc.canBuildRobot(RobotType.WATCHTOWER, dir)) {
                         rc.buildRobot(RobotType.WATCHTOWER, dir);
                         mode = Mode.REPAIR;
@@ -85,7 +84,7 @@ public class Builder extends Robot {
             }
         }
 
-        if (labsBuilt == 0 && roundNum > 300 && rc.getID() % 8 == 0 && teamLead > (RobotType.LABORATORY.buildCostLead * 1.5)) {
+        if (comms.getRobotCount(RobotType.LABORATORY) == 0 && roundNum > 300 && teamLead > RobotType.LABORATORY.buildCostLead) {
             for (Direction dir : Navigation.directions) {
                 MapLocation labLoc = myLoc.add(dir);
                 if (!isLatticeTile(labLoc) && labLoc.distanceSquaredTo(parentLoc) > 2 && rc.canBuildRobot(RobotType.LABORATORY, dir)) {

@@ -102,7 +102,7 @@ public class Robot {
             for (MapLocation loc : guesses) {
                 if (loc != null && rc.canSenseLocation(loc)) {
                     RobotInfo info = rc.senseRobotAtLocation(loc);
-                    if (info != null && info.type == RobotType.ARCHON) {
+                    if (info != null && info.type == RobotType.ARCHON && info.team == opponentTeam) {
                         comms.updateCorrectGuess(loc);
                     } else {
                         comms.updateIncorrectGuess(loc); // TODO: assumes archons cannot move from guess, but they can

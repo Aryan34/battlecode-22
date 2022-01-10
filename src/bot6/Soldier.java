@@ -9,11 +9,10 @@ public class Soldier extends Robot {
         ATTACK,
         DEFEND
     }
-
     Mode mode;
 
-    MapLocation possibleArchonLoc = null;
-    MapLocation definiteArchonLoc = null;
+    MapLocation[] possibleArchonLocs;
+    MapLocation possibleLoc = null;
 
     int possibleArchonLocsChecked = 0;
 
@@ -42,41 +41,27 @@ public class Soldier extends Robot {
 
     void attack() throws GameActionException {
         fight(rc.senseNearbyRobots(myType.visionRadiusSquared, opponentTeam));
+        possibleArchonLocs = comms.getEnemyArchonLocs();
 
-//        if (definiteArchonLoc != null) {
-//            if (myLoc.distanceSquaredTo(definiteArchonLoc) > 35) {
-//                nav.moveTowards(definiteArchonLoc);
-//            } else {
-//                int attackerCount = util.countNearbyFriendlyTroops(RobotType.SOLDIER);
-//                if (attackerCount >= ATTACK_COUNT_THRESHOLD) {
-//                    nav.moveTowards(definiteArchonLoc);
-//                } else {
-//                    nav.moveRandom();
-//                }
-//            }
-//        }
-        if (possibleArchonLocsChecked == 3) {
-            mode = Mode.DEFEND;
-            defend();
-            return;
-        }
-
-        if (possibleArchonLoc == null) {
-            possibleArchonLoc = randomAttackTarget(rc.getID() % 3);
-            // System.out.println("SET POSSIBLE LOC TO: " + possibleArchonLoc);
-        }
-
-        if ((rc.canSenseLocation(possibleArchonLoc) && rc.senseRobotAtLocation(possibleArchonLoc) == null)) {
-            ++possibleArchonLocsChecked;
-            possibleArchonLoc = randomAttackTarget(((rc.getID() + possibleArchonLocsChecked) % 3));
-        }
-
-        if (possibleArchonLoc != null) {
-            if (!nav.moveTowards(possibleArchonLoc)) {
-                brownian();
-                // System.out.println("MOVING TOWARDS LOC FAILED: " + possibleArchonLoc);
+        int lowestDist = 10000;
+        for (MapLocation loc : possibleArchonLocs) {
+            if (loc != null && myLoc.distanceSquaredTo(loc) < lowestDist) {
+                lowestDist = myLoc.distanceSquaredTo(loc);
+                possibleLoc = loc;
             }
-            // System.out.println("MOVING TOWARDS POSSIBLE LOC: " + possibleArchonLoc);
+        }
+
+        if (possibleLoc != null) {
+            if (myLoc.distanceSquaredTo(possibleLoc) > 0) {
+                nav.moveTowards(possibleLoc);
+            } else {
+                int attackerCount = util.countNearbyFriendlyTroops(RobotType.SOLDIER);
+                if (attackerCount >= ATTACK_COUNT_THRESHOLD) {
+                    nav.moveTowards(possibleLoc);
+                } else {
+                    nav.moveRandom();
+                }
+            }
         }
 
         brownian();
@@ -95,6 +80,7 @@ public class Soldier extends Robot {
         optimalAttack();
     }
 
+    // TODO: Sometimes teammates run away when others are fighting, causing a loss, so fix this
     void kite(RobotInfo[] enemyInfo) throws GameActionException {
         if (util.countNearbyEnemyAttackers(enemyInfo) == 0) {
             MapLocation target = util.lowestHealthTarget();

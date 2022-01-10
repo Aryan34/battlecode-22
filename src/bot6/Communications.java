@@ -56,9 +56,6 @@ public class Communications {
     void addEnemyArchonLoc(MapLocation loc) throws GameActionException {
         int value = encodeLocation(loc);
         for (int i = 4; i < 16; ++i) {
-            if (rc.readSharedArray(i) == value) {
-                break;
-            }
             if (rc.readSharedArray(i) == 0) {
                 rc.writeSharedArray(i, value);
                 return;

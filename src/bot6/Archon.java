@@ -61,7 +61,7 @@ public class Archon extends Robot {
             RobotType.SOLDIER,
             RobotType.SOLDIER,
             RobotType.SOLDIER,
-            RobotType.BUILDER,
+            RobotType.SOLDIER,
             RobotType.BUILDER,
             RobotType.MINER,
             RobotType.SOLDIER,
