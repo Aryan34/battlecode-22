@@ -2,6 +2,7 @@ package bot6;
 
 import battlecode.common.*;
 
+import java.util.Arrays;
 import java.util.Random;
 // move away from HQ code removed from this file
 // for run away, we now run away if we can sense enemy, not only if we r within their action radius
@@ -96,17 +97,20 @@ public class Robot {
             comms.updateRobotCount(myType, 1);
         }
 
-        // if we haven't detected all enemy archons yet, passively search for them
-        if (!enemyArchonCountFlag) {
-            if (comms.getDetectedEnemyArchonCount() == rc.getArchonCount()) {
-                enemyArchonCountFlag = true;
-            } else if (comms.getDetectedEnemyArchonCount() < rc.getArchonCount()) {
-                for (RobotInfo info : rc.senseNearbyRobots(myType.visionRadiusSquared, opponentTeam)) {
-                    if (info.type == RobotType.ARCHON) {
-                        comms.addEnemyArchonLoc(info.location);
+        if (roundNum > 1 && !enemyArchonCountFlag && comms.possibleEnemyArchonCount() != rc.getArchonCount()) {
+            MapLocation[] guesses = comms.getEnemyArchonLocs();
+            for (MapLocation loc : guesses) {
+                if (loc != null && rc.canSenseLocation(loc)) {
+                    RobotInfo info = rc.senseRobotAtLocation(loc);
+                    if (info != null && info.type == RobotType.ARCHON) {
+                        comms.updateCorrectGuess(loc);
+                    } else {
+                        comms.updateIncorrectGuess(loc); // TODO: assumes archons cannot move from guess, but they can
                     }
                 }
             }
+        } else if (comms.possibleEnemyArchonCount() == rc.getArchonCount()) {
+            enemyArchonCountFlag = true;
         }
 
         ++turnCount;

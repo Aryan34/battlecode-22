@@ -2,6 +2,8 @@ package bot6;
 
 import battlecode.common.*;
 
+import java.util.Arrays;
+
 public class Archon extends Robot {
     static RobotType[] buildOrder1 = {
             RobotType.SOLDIER,
@@ -84,7 +86,11 @@ public class Archon extends Robot {
 
     public Archon(RobotController rc) throws GameActionException {
         super(rc);
-        comms.addFriendlyArchonLoc(rc.getLocation());
+
+        comms.addFriendlyArchonLoc(myLoc);
+        comms.addEnemyArchonLoc(nav.reflectHoriz(myLoc));
+        comms.addEnemyArchonLoc(nav.reflectVert(myLoc));
+        comms.addEnemyArchonLoc(nav.reflectDiag(myLoc));
 
         buildIndex = 0;
 

@@ -21,22 +21,11 @@ public class Communications {
     }
 
     int getBuildMutex() throws GameActionException {
-        return rc.readSharedArray(16);
+        return rc.readSharedArray(23);
     }
 
     void updateBuildMutex() throws GameActionException {
-        rc.writeSharedArray(16, (rc.readSharedArray(16) + 1) % rc.getArchonCount());
-    }
-
-    int getDetectedEnemyArchonCount() throws GameActionException {
-        int count = 0;
-        for (int i = 4; i < 8; ++i) {
-            if (rc.readSharedArray(i) != 0) {
-                ++count;
-            }
-        }
-
-        return count;
+        rc.writeSharedArray(23, (rc.readSharedArray(23) + 1) % rc.getArchonCount());
     }
 
     int encodeLocation(MapLocation loc) {
@@ -66,7 +55,7 @@ public class Communications {
 
     void addEnemyArchonLoc(MapLocation loc) throws GameActionException {
         int value = encodeLocation(loc);
-        for (int i = 4; i < 8; ++i) {
+        for (int i = 4; i < 16; ++i) {
             if (rc.readSharedArray(i) == value) {
                 break;
             }
@@ -91,8 +80,8 @@ public class Communications {
     }
 
     MapLocation[] getEnemyArchonLocs() throws GameActionException {
-        MapLocation[] locs = new MapLocation[4];
-        for (int i = 4; i < 8; ++i) {
+        MapLocation[] locs = new MapLocation[12];
+        for (int i = 4; i < 16; ++i) {
             int value = rc.readSharedArray(i);
             if (value != 0 && value != 0xFFFF) {
                 MapLocation loc = decodeLocation(value);
@@ -105,7 +94,7 @@ public class Communications {
 
     void updateDestroyedEnemyArchon(MapLocation loc) throws GameActionException {
         int encoded = encodeLocation(loc);
-        for (int i = 4; i < 8; ++i) {
+        for (int i = 4; i < 16; ++i) {
             int value = rc.readSharedArray(i);
             if (value == encoded) {
                 rc.writeSharedArray(i, 0xFFFF);
@@ -115,7 +104,7 @@ public class Communications {
 
     void updateEscapedEnemyArchon(MapLocation loc) throws GameActionException {
         int encoded = encodeLocation(loc);
-        for (int i = 4; i < 8; ++i) {
+        for (int i = 4; i < 16; ++i) {
             int value = rc.readSharedArray(i);
             if (value == encoded) {
                 rc.writeSharedArray(i, 0);
@@ -123,28 +112,73 @@ public class Communications {
         }
     }
 
+    void updateCorrectGuess(MapLocation loc) throws GameActionException {
+        int guessIndexMod = -1;
+        int value = encodeLocation(loc);
+
+        for (int i = 4; i < 16; ++i) {
+            if (rc.readSharedArray(i) == value) {
+                guessIndexMod = i % 3;
+            }
+        }
+
+        for (int i = 4; i < 16; ++i) {
+            if (i % 3 != guessIndexMod && rc.readSharedArray(i) != 0) {
+                rc.writeSharedArray(i, 0);
+            }
+        }
+    }
+
+    void updateIncorrectGuess(MapLocation loc) throws GameActionException {
+        int guessIndexMod = -1;
+        int value = encodeLocation(loc);
+
+        for (int i = 4; i < 16; ++i) {
+            if (rc.readSharedArray(i) == value) {
+                guessIndexMod = i % 3;
+            }
+        }
+
+        for (int i = 4; i < 16; ++i) {
+            if (i % 3 == guessIndexMod && rc.readSharedArray(i) != 0) {
+                rc.writeSharedArray(i, 0);
+            }
+        }
+    }
+
+    int possibleEnemyArchonCount() throws GameActionException {
+        int count = 0;
+        for (int i = 4; i < 16; ++i) {
+            if (rc.readSharedArray(i) != 0) {
+                ++count;
+            }
+        }
+
+        return count;
+    }
+
     void updateRobotCount(RobotType type, int update) throws GameActionException {
         switch (type) {
             case ARCHON:
-                rc.writeSharedArray(8, rc.readSharedArray(8) + update);
+                rc.writeSharedArray(16, rc.readSharedArray(16) + update);
                 break;
             case LABORATORY:
-                rc.writeSharedArray(9, rc.readSharedArray(9) + update);
+                rc.writeSharedArray(17, rc.readSharedArray(17) + update);
                 break;
             case WATCHTOWER:
-                rc.writeSharedArray(10, rc.readSharedArray(10) + update);
+                rc.writeSharedArray(18, rc.readSharedArray(18) + update);
                 break;
             case MINER:
-                rc.writeSharedArray(11, rc.readSharedArray(11) + update);
+                rc.writeSharedArray(19, rc.readSharedArray(19) + update);
                 break;
             case BUILDER:
-                rc.writeSharedArray(12, rc.readSharedArray(12) + update);
+                rc.writeSharedArray(20, rc.readSharedArray(20) + update);
                 break;
             case SOLDIER:
-                rc.writeSharedArray(13, rc.readSharedArray(13) + update);
+                rc.writeSharedArray(21, rc.readSharedArray(21) + update);
                 break;
             case SAGE:
-                rc.writeSharedArray(14, rc.readSharedArray(14) + update);
+                rc.writeSharedArray(22, rc.readSharedArray(22) + update);
                 break;
         }
     }
@@ -152,19 +186,19 @@ public class Communications {
     int getRobotCount(RobotType type) throws GameActionException {
         switch (type) {
             case ARCHON:
-                return rc.readSharedArray(8);
+                return rc.readSharedArray(16);
             case LABORATORY:
-                return rc.readSharedArray(9);
+                return rc.readSharedArray(17);
             case WATCHTOWER:
-                return rc.readSharedArray(10);
+                return rc.readSharedArray(18);
             case MINER:
-                return rc.readSharedArray(11);
+                return rc.readSharedArray(19);
             case BUILDER:
-                return rc.readSharedArray(12);
+                return rc.readSharedArray(20);
             case SOLDIER:
-                return rc.readSharedArray(13);
+                return rc.readSharedArray(21);
             case SAGE:
-                return rc.readSharedArray(14);
+                return rc.readSharedArray(22);
             default:
                 return 0;
         }

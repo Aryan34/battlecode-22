@@ -145,14 +145,9 @@ public class Soldier extends Robot {
                             targetHealth = info.health;
                         }
                     case ARCHON:
-                        if (targetType != RobotType.SAGE && targetType != RobotType.WATCHTOWER &&
-                                targetType != RobotType.SOLDIER) {
-                            targetLoc = info.location;
-                            targetType = info.type;
-                            targetHealth = info.health;
-                        }
+                        break;
                     default:
-                        if (targetType != RobotType.ARCHON && targetType != RobotType.WATCHTOWER &&
+                        if (targetType != RobotType.WATCHTOWER &&
                                 targetType != RobotType.SOLDIER && targetType != RobotType.SAGE
                                 && info.health < targetHealth) {
                             targetLoc = info.location;
