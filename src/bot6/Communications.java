@@ -154,6 +154,17 @@ public class Communications {
         return count;
     }
 
+    int possibleAliveEnemyArchonCount() throws GameActionException {
+        int count = 0;
+        for (int i = 4; i < 16; ++i) {
+            if (rc.readSharedArray(i) != 0 && rc.readSharedArray(i) != 0xFFFF) {
+                ++count;
+            }
+        }
+
+        return count;
+    }
+
     void updateRobotCount(RobotType type, int update) throws GameActionException {
         switch (type) {
             case ARCHON:
