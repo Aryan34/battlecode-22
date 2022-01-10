@@ -29,10 +29,10 @@ public class Sage extends Robot {
     }
 
     void attack() throws GameActionException {
-
+        brownian();
     }
 
     void defend() throws GameActionException {
-
+        brownian();
     }
 }

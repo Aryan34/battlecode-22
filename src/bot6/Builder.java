@@ -26,6 +26,7 @@ public class Builder extends Robot {
     void playTurn() throws GameActionException {
         super.playTurn();
         nav.retreatFromEnemies(rc.senseNearbyRobots(myType.visionRadiusSquared, opponentTeam));
+        myLoc = rc.getLocation();
 
         switch (mode) {
             case BUILD_LATTICE:
@@ -66,12 +67,15 @@ public class Builder extends Robot {
     void buildLattice() throws GameActionException {
         if (isLatticeTile(myLoc)) {
             nav.moveRandomCardinal();
+            myLoc = rc.getLocation();
         }
+
         if (!isLatticeTile(myLoc)) {
-            for (Direction dir : Navigation.cardinalDirections) {
+            for (Direction dir : Navigation.directions) {
                 MapLocation watchtowerLoc = myLoc.add(dir);
-                if (watchtowerLoc.distanceSquaredTo(parentLoc) > 2 && rc.canBuildRobot(RobotType.WATCHTOWER, dir)) {
-                    if (isLatticeTile(watchtowerLoc)) {
+                if (isLatticeTile(watchtowerLoc)) {
+                    System.out.println("THIS LOC IS A LATTICE LOC: " + watchtowerLoc);
+                    if (watchtowerLoc.distanceSquaredTo(parentLoc) > 2 && rc.canBuildRobot(RobotType.WATCHTOWER, dir)) {
                         rc.buildRobot(RobotType.WATCHTOWER, dir);
                         mode = Mode.REPAIR;
                         repairTarget = watchtowerLoc;
@@ -84,7 +88,7 @@ public class Builder extends Robot {
         if (labsBuilt == 0 && roundNum > 300 && rc.getID() % 8 == 0 && teamLead > (RobotType.LABORATORY.buildCostLead * 1.5)) {
             for (Direction dir : Navigation.directions) {
                 MapLocation labLoc = myLoc.add(dir);
-                if (!isLatticeTile(labLoc) && rc.canBuildRobot(RobotType.LABORATORY, dir)) {
+                if (!isLatticeTile(labLoc) && labLoc.distanceSquaredTo(parentLoc) > 2 && rc.canBuildRobot(RobotType.LABORATORY, dir)) {
                     rc.buildRobot(RobotType.LABORATORY, dir);
                     mode = Mode.REPAIR;
                     repairTarget = labLoc;

@@ -55,6 +55,19 @@ public class Archon extends Robot {
             RobotType.SOLDIER
     };
 
+    static RobotType[] buildOrder5 = {
+            RobotType.SOLDIER,
+            RobotType.SOLDIER,
+            RobotType.SOLDIER,
+            RobotType.BUILDER,
+            RobotType.BUILDER,
+            RobotType.MINER,
+            RobotType.SOLDIER,
+            RobotType.SOLDIER,
+            RobotType.MINER,
+            RobotType.SOLDIER
+    };
+
 
     int buildIndex;
 
@@ -105,10 +118,8 @@ public class Archon extends Robot {
         } else {
             if (teamLead > 750 && buildersSpawned < 8) {
                 followBuildOrder(buildOrder2);
-            } else if (rc.getTeamGoldAmount(myTeam) > RobotType.SAGE.buildCostGold * 1.5) {
-                util.tryBuildRandom(RobotType.SAGE);
             } else {
-                followBuildOrder(buildOrder1);
+                followBuildOrder(buildOrder5);
             }
         }
     }
