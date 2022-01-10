@@ -30,8 +30,6 @@ public class Archon extends Robot {
     };
 
     static RobotType[] buildOrder3 = {
-            RobotType.MINER,
-            RobotType.MINER,
             RobotType.SOLDIER,
             RobotType.SOLDIER,
             RobotType.SOLDIER,
@@ -39,7 +37,9 @@ public class Archon extends Robot {
             RobotType.MINER,
             RobotType.SOLDIER,
             RobotType.SOLDIER,
-            RobotType.MINER
+            RobotType.SOLDIER,
+            RobotType.MINER,
+            RobotType.MINER,
     };
 
     static RobotType[] buildOrder4 = {
@@ -88,10 +88,6 @@ public class Archon extends Robot {
     void playTurn() throws GameActionException {
         super.playTurn();
 
-        if (soldiersSpawned > 10) {
-            setAttackTarget();
-        }
-
         weightedThreatCount = countThreatsWeighted();
         if (weightedThreatCount > 0) {
             enemySoldierSensed = true;
@@ -104,33 +100,15 @@ public class Archon extends Robot {
             followBuildOrder(buildOrder1);
         } else if (comms.getRobotCount(RobotType.MINER) < 12) {
             followBuildOrder(buildOrder4);
-        } else if (buildIndex < 400) {
-            if (teamLead < 500) {
-                followBuildOrder(buildOrder3);
-            } else if (teamLead > 1000 && buildersSpawned < 8) {
-                followBuildOrder(buildOrder2);
-            } else {
-                followBuildOrder(buildOrder1);
-            }
+        } else if (roundNum < 150 && rc.getTeamLeadAmount(myTeam) < 500) {
+            followBuildOrder(buildOrder3);
         } else {
-            rc.setIndicatorString("Case: ELSE");
-            if (rc.getTeamGoldAmount(myTeam) > RobotType.SAGE.buildCostGold * 1.5) {
+            if (teamLead > 750 && buildersSpawned < 8) {
+                followBuildOrder(buildOrder2);
+            } else if (rc.getTeamGoldAmount(myTeam) > RobotType.SAGE.buildCostGold * 1.5) {
                 util.tryBuildRandom(RobotType.SAGE);
             } else {
                 followBuildOrder(buildOrder1);
-            }
-        }
-    }
-
-    void setAttackTarget() throws GameActionException {
-        if (rc.readSharedArray(17) != 0) {
-            return;
-        }
-
-        MapLocation[] enemyArchonLocs = comms.getEnemyArchonLocs();
-        for (MapLocation loc : enemyArchonLocs) {
-            if (loc != null) {
-                rc.writeSharedArray(17, comms.encodeLocation(loc));
             }
         }
     }

@@ -35,6 +35,14 @@ public class Miner extends Robot {
         MapLocation depositLoc = largestDeposit(true);
         if (depositLoc != null) {
             nav.moveTowards(depositLoc);
+        } else if (searchTarget == null || myLoc.distanceSquaredTo(searchTarget) < myType.visionRadiusSquared) {
+            searchTarget = randomSearchTarget();
+        }
+
+        if (searchTarget != null) {
+            if (!nav.moveTowards(searchTarget)) {
+                brownian();
+            }
         }
 
         brownian();
@@ -47,7 +55,7 @@ public class Miner extends Robot {
         int highestLead = 0; // TODO: maybe set to -25 to allow for neg. values too?
 
         for (MapLocation loc : rc.senseNearbyLocationsWithLead(RobotType.MINER.visionRadiusSquared)) {
-            if (rc.senseLead(loc) >= 10) {
+            if (rc.senseLead(loc) >= 2) {
                 int value = rc.senseLead(loc) - myLoc.distanceSquaredTo(loc);
                 if (value > highestLead) {
                     highestLead = value;
@@ -74,7 +82,7 @@ public class Miner extends Robot {
     MapLocation largestNeighboringDeposit(boolean searchForGold) throws GameActionException {
         MapLocation depositLoc = null;
         int highestGold = 0;
-        int highestLead = 9;
+        int highestLead = 1;
 
         if (searchForGold) {
             for (MapLocation loc : rc.senseNearbyLocationsWithGold(myType.actionRadiusSquared)) {
@@ -99,5 +107,19 @@ public class Miner extends Robot {
         }
 
         return depositLoc;
+    }
+
+    // TODO: get better miner exploration code
+    MapLocation randomSearchTarget() throws GameActionException {
+        switch (rc.getID() % 3) {
+            case 0:
+                return nav.reflectHoriz(parentLoc);
+            case 1:
+                return nav.reflectVert(parentLoc);
+            case 2:
+                return nav.reflectDiag(parentLoc);
+        }
+
+        return nav.reflectDiag(parentLoc);
     }
 }

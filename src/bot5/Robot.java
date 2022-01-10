@@ -70,6 +70,11 @@ public class Robot {
         myLoc = rc.getLocation();
         teamLead = rc.getTeamLeadAmount(myTeam);
 
+        if (turnCount == 0) {
+            comms.updateRobotCount(myType, 1);
+        }
+
+        // for brownian
         if (rc.canSenseLocation(new MapLocation(low_x_bound - 1, myLoc.y))) {
             low_x_bound--;
         }
@@ -83,9 +88,6 @@ public class Robot {
             high_y_bound++;
         }
 
-        if (turnCount == 0) {
-            comms.updateRobotCount(myType, 1);
-        }
         if (!considerDead && rc.getHealth() < 6) {
             considerDead = true;
             comms.updateRobotCount(myType, -1);
@@ -94,6 +96,7 @@ public class Robot {
             comms.updateRobotCount(myType, 1);
         }
 
+        // if we haven't detected all enemy archons yet, passively search for them
         if (!enemyArchonCountFlag) {
             if (comms.getDetectedEnemyArchonCount() == rc.getArchonCount()) {
                 enemyArchonCountFlag = true;
