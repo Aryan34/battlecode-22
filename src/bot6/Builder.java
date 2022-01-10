@@ -9,12 +9,7 @@ public class Builder extends Robot {
         REPAIR,
         MOVE
     }
-
     Mode mode;
-
-    int labsBuilt = 0;
-    boolean dontMove = false;
-    boolean buildLattice = false;
 
     MapLocation repairTarget;
 
@@ -76,6 +71,7 @@ public class Builder extends Robot {
                 if (isLatticeTile(watchtowerLoc)) {
                     if (watchtowerLoc.distanceSquaredTo(parentLoc) > 2 && rc.canBuildRobot(RobotType.WATCHTOWER, dir)) {
                         rc.buildRobot(RobotType.WATCHTOWER, dir);
+                        comms.updateRobotCount(RobotType.WATCHTOWER, 1);
                         mode = Mode.REPAIR;
                         repairTarget = watchtowerLoc;
                         break;
@@ -89,9 +85,9 @@ public class Builder extends Robot {
                 MapLocation labLoc = myLoc.add(dir);
                 if (!isLatticeTile(labLoc) && labLoc.distanceSquaredTo(parentLoc) > 2 && rc.canBuildRobot(RobotType.LABORATORY, dir)) {
                     rc.buildRobot(RobotType.LABORATORY, dir);
+                    comms.updateRobotCount(RobotType.LABORATORY, 1);
                     mode = Mode.REPAIR;
                     repairTarget = labLoc;
-                    ++labsBuilt;
                     break;
                 }
             }
@@ -100,12 +96,15 @@ public class Builder extends Robot {
         for (RobotInfo info : rc.senseNearbyRobots(myType.actionRadiusSquared, myTeam)) {
             if (info.type == RobotType.WATCHTOWER && rc.canMutate(info.location)) {
                 if (info.level == 1 && teamLead > (RobotType.WATCHTOWER.getLeadMutateCost(2) * 2) ||
-                        info.level == 2 && rc.getTeamGoldAmount(myTeam) > (RobotType.WATCHTOWER.getGoldMutateCost(3) * 2)) {
+                        info.level == 2 && rc.getTeamGoldAmount(myTeam) > (RobotType.WATCHTOWER.getGoldMutateCost(3))) {
                     rc.mutate(info.location);
                 }
             }
         }
-        brownian();
+
+        if (mode != Mode.REPAIR) {
+            brownian();
+        }
     }
 
     boolean isLatticeTile(MapLocation loc) {
