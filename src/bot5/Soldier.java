@@ -3,25 +3,25 @@ package bot5;
 import battlecode.common.*;
 
 public class Soldier extends Robot {
+    static final int ATTACK_COUNT_THRESHOLD = 10;
+
     enum Mode {
         ATTACK,
         DEFEND
     }
 
-    static final int ATTACK_COUNT_THRESHOLD = 10;
-
     Mode mode;
-
-    int modulus;
 
     MapLocation possibleArchonLoc = null;
     MapLocation definiteArchonLoc = null;
+
+    int possibleArchonLocsChecked = 0;
 
     public Soldier(RobotController rc) {
         super(rc);
         mode = Mode.ATTACK;
 
-        modulus = 3 + (roundNum / 100);
+        int modulus = 3 + (roundNum / 100);
         if (rc.getID() % modulus == 0) {
             mode = Mode.DEFEND;
         }
@@ -43,36 +43,43 @@ public class Soldier extends Robot {
     void attack() throws GameActionException {
         fight(rc.senseNearbyRobots(myType.visionRadiusSquared, opponentTeam));
 
-        int encodedAttackTarget = rc.readSharedArray(17);
-        if (encodedAttackTarget != 0) {
-            definiteArchonLoc = comms.decodeLocation(encodedAttackTarget);
+//        if (definiteArchonLoc != null) {
+//            if (myLoc.distanceSquaredTo(definiteArchonLoc) > 35) {
+//                nav.moveTowards(definiteArchonLoc);
+//            } else {
+//                int attackerCount = util.countNearbyFriendlyTroops(RobotType.SOLDIER);
+//                if (attackerCount >= ATTACK_COUNT_THRESHOLD) {
+//                    nav.moveTowards(definiteArchonLoc);
+//                } else {
+//                    nav.moveRandom();
+//                }
+//            }
+//        }
+        if (possibleArchonLocsChecked == 3) {
+            mode = Mode.DEFEND;
+            defend();
+            return;
         }
 
-        if (definiteArchonLoc != null) {
-            if (myLoc.distanceSquaredTo(definiteArchonLoc) > 35) {
-                nav.moveTowards(definiteArchonLoc);
-            } else {
-                int attackerCount = util.countNearbyFriendlyTroops(RobotType.SOLDIER);
-                if (attackerCount >= ATTACK_COUNT_THRESHOLD) {
-                    nav.moveTowards(definiteArchonLoc);
-                } else {
-                    nav.moveRandom();
-                }
-            }
-        } else {
-            if (possibleArchonLoc == null ||
-                    (myLoc.distanceSquaredTo(possibleArchonLoc) < myType.visionRadiusSquared) &&
-                            rc.senseRobotAtLocation(possibleArchonLoc) == null) {
-                possibleArchonLoc = randomAttackTarget();
-            }
-
-            if (possibleArchonLoc != null) {
-                if (!nav.moveTowards(possibleArchonLoc)) {
-                    brownian();
-                }
-            }
-            brownian();
+        if (possibleArchonLoc == null) {
+            possibleArchonLoc = randomAttackTarget(rc.getID() % 3);
+            // System.out.println("SET POSSIBLE LOC TO: " + possibleArchonLoc);
         }
+
+        if ((rc.canSenseLocation(possibleArchonLoc) && rc.senseRobotAtLocation(possibleArchonLoc) == null)) {
+            ++possibleArchonLocsChecked;
+            possibleArchonLoc = randomAttackTarget(((rc.getID() + possibleArchonLocsChecked) % 3));
+        }
+
+        if (possibleArchonLoc != null) {
+            if (!nav.moveTowards(possibleArchonLoc)) {
+                brownian();
+                // System.out.println("MOVING TOWARDS LOC FAILED: " + possibleArchonLoc);
+            }
+            // System.out.println("MOVING TOWARDS POSSIBLE LOC: " + possibleArchonLoc);
+        }
+
+        brownian();
     }
 
     void defend() throws GameActionException {
@@ -107,7 +114,7 @@ public class Soldier extends Robot {
             if (target != null && enemy != null && enemy.health <= rc.getHealth()) {
                 nav.moveTowards(target);
             }
-        } else {
+        } else if (util.countNearbyEnemyAttackers(enemyInfo) > util.countNearbyFriendlyTroops(RobotType.SOLDIER)){
             nav.retreatFromEnemies(enemyInfo);
         }
     }
@@ -157,11 +164,12 @@ public class Soldier extends Robot {
         }
 
         if (targetLoc != null) {
-            rc.attack(targetLoc);
-            if (rc.senseRobotAtLocation(targetLoc) == null) {
-                comms.updateDestroyedEnemyArchon(targetLoc);
-                rc.writeSharedArray(17, 0);
-                rc.writeSharedArray(18, 0);
+            RobotInfo target = rc.senseRobotAtLocation(targetLoc);
+            if (target != null) {
+                rc.attack(targetLoc);
+                if (target.type == RobotType.ARCHON && rc.senseRobotAtLocation(targetLoc) == null) {
+                    comms.updateDestroyedEnemyArchon(targetLoc);
+                }
             }
         }
     }
@@ -191,8 +199,7 @@ public class Soldier extends Robot {
         return bestDir;
     }
 
-    MapLocation randomAttackTarget() throws GameActionException {
-        int symmetryType = rng.nextInt(3);
+    MapLocation randomAttackTarget(int symmetryType) throws GameActionException {
         switch (symmetryType) {
             case 0:
                 return nav.reflectHoriz(parentLoc);
@@ -202,6 +209,6 @@ public class Soldier extends Robot {
                 return nav.reflectDiag(parentLoc);
         }
 
-        return nav.reflectDiag(parentLoc);
+        return null;
     }
 }

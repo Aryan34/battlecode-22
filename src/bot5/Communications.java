@@ -28,17 +28,6 @@ public class Communications {
         rc.writeSharedArray(16, (rc.readSharedArray(16) + 1) % rc.getArchonCount());
     }
 
-    int getArchonCount() throws GameActionException {
-        int count = 0;
-        for (int i = 0; i < 4; ++i) {
-            if (rc.readSharedArray(i) != 0) {
-                ++count;
-            }
-        }
-
-        return count;
-    }
-
     int getDetectedEnemyArchonCount() throws GameActionException {
         int count = 0;
         for (int i = 4; i < 8; ++i) {
@@ -114,10 +103,6 @@ public class Communications {
         return locs;
     }
 
-    void chooseTargetEnemyArchon(int index) throws GameActionException {
-        rc.writeSharedArray(15, index + 1);
-    }
-
     void updateDestroyedEnemyArchon(MapLocation loc) throws GameActionException {
         int encoded = encodeLocation(loc);
         for (int i = 4; i < 8; ++i) {
@@ -128,12 +113,14 @@ public class Communications {
         }
     }
 
-    MapLocation getTargetEnemyArchon() throws GameActionException {
-        int index = rc.readSharedArray(15);
-        if (index == 0) {
-            return null;
+    void updateEscapedEnemyArchon(MapLocation loc) throws GameActionException {
+        int encoded = encodeLocation(loc);
+        for (int i = 4; i < 8; ++i) {
+            int value = rc.readSharedArray(i);
+            if (value == encoded) {
+                rc.writeSharedArray(i, 0);
+            }
         }
-        return getEnemyArchonLocs()[index - 1];
     }
 
     void updateRobotCount(RobotType type, int update) throws GameActionException {
