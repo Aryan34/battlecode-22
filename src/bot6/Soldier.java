@@ -71,6 +71,20 @@ public class Soldier extends Robot {
         brownian();
     }
 
+    MapLocation closestEnemyLoc() throws GameActionException {
+        MapLocation closest = null;
+        int lowestDist = 10000;
+
+        for (MapLocation loc : comms.getEnemyLocations()) {
+            if (loc != null && myLoc.distanceSquaredTo(loc) < lowestDist) {
+                closest = loc;
+                lowestDist = myLoc.distanceSquaredTo(loc);
+            }
+        }
+
+        return closest;
+    }
+
     void fight(RobotInfo[] enemyInfo) throws GameActionException {
         kite(enemyInfo);
         optimalAttack();

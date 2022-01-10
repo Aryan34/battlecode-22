@@ -78,7 +78,7 @@ public class Robot {
         updateBounds();
         updateLifeStatus();
         searchForEnemyArchon();
-        reportEnemyLocs();
+        // reportEnemyLocs();
 
         ++turnCount;
     }

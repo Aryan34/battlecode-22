@@ -130,7 +130,7 @@ public class Archon extends Robot {
         }
 
         // TODO: make this more efficient so archons split the clearing work evenly
-        comms.clearEnemyLocations(36);
+        // comms.clearEnemyLocations(36);
     }
 
     void followBuildOrder(RobotType[] buildOrder) throws GameActionException {
