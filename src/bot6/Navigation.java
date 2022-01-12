@@ -60,30 +60,12 @@ public class Navigation {
 
     static final int RECENTLY_VISITED_THRESHOLD = 10;
 
-
     RobotController rc;
 
     int[][] visited = new int[GameConstants.MAP_MAX_HEIGHT][GameConstants.MAP_MAX_WIDTH];
 
     Navigation(RobotController rc) {
         this.rc = rc;
-    }
-
-    boolean moveRandom() throws GameActionException {
-        if (rc.getType() == RobotType.SOLDIER) {
-            System.out.println("SOLDIER GOING RANDO");
-        }
-        int randX = (Robot.rng.nextInt(rc.getMapWidth()));
-        int randY = (Robot.rng.nextInt(rc.getMapHeight()));
-
-        MapLocation randLoc = new MapLocation(randX, randY);
-        Direction randDir = rc.getLocation().directionTo(randLoc);
-
-        if (rc.canMove(randDir)) {
-            rc.move(randDir);
-            return true;
-        }
-        return false;
     }
 
     boolean moveRandomCardinal() throws GameActionException {
@@ -180,6 +162,8 @@ public class Navigation {
 
         if (rc.canMove(bestDir)) {
             rc.move(bestDir);
+            MapLocation currLoc = rc.getLocation();
+            visited[currLoc.x][currLoc.y] = rc.getRoundNum();
             return true;
         }
         return false;
@@ -256,7 +240,8 @@ public class Navigation {
         for (Direction dir1 : directions) {
             for (Direction dir2 : evenCloserDirections(myLoc.directionTo(target))) {
                 MapLocation newLoc = myLoc.add(dir1).add(dir2);
-                if (!rc.onTheMap(myLoc.add(dir1)) || !rc.onTheMap(newLoc)) {
+                if (!rc.onTheMap(myLoc.add(dir1)) || !rc.onTheMap(newLoc) ||
+                        rc.getRoundNum() - visited[myLoc.add(dir1).x][myLoc.add(dir1).y] < 15) {
                     continue;
                 }
                 int newDist = newLoc.distanceSquaredTo(target);
@@ -273,6 +258,8 @@ public class Navigation {
 
         if (rc.canMove(bestDir)) {
             rc.move(bestDir);
+            MapLocation currLoc = rc.getLocation();
+            visited[currLoc.x][currLoc.y] = rc.getRoundNum();
             return true;
         }
         return false;
@@ -291,7 +278,9 @@ public class Navigation {
         for (Direction dir1 : directions) {
             for (Direction dir2 : evenCloserDirections(myLoc.directionTo(target))) {
                 MapLocation newLoc = myLoc.add(dir1).add(dir2);
-                if (!rc.onTheMap(myLoc.add(dir1)) || !rc.onTheMap(newLoc)) {
+                if (!rc.onTheMap(myLoc.add(dir1)) || !rc.onTheMap(newLoc) ||
+                        (rc.getRoundNum() - visited[myLoc.add(dir1).x][myLoc.add(dir1).y] < 15 &&
+                                visited[myLoc.add(dir1).x][myLoc.add(dir1).y] != 0)) {
                     continue;
                 }
                 int newDist = newLoc.distanceSquaredTo(target);
@@ -308,6 +297,8 @@ public class Navigation {
 
         if (rc.canMove(bestDir)) {
             rc.move(bestDir);
+            MapLocation currLoc = rc.getLocation();
+            visited[currLoc.x][currLoc.y] = rc.getRoundNum();
             return true;
         }
         return false;

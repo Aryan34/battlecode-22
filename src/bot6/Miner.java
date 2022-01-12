@@ -18,8 +18,12 @@ public class Miner extends Robot {
         super.playTurn();
 
         RobotInfo[] nearbyEnemies = rc.senseNearbyRobots(myType.visionRadiusSquared, opponentTeam);
-        if (nearbyEnemies.length != 0) {
-            nav.retreatFromEnemies(nearbyEnemies);
+        for (RobotInfo info : nearbyEnemies) {
+            if (info.type == RobotType.SAGE || info.type == RobotType.SOLDIER || info.type == RobotType.WATCHTOWER) {
+                nav.retreatFromEnemies(nearbyEnemies);
+                rc.setIndicatorString("RETREAT");
+                break;
+            }
         }
 
         // TODO: possibly research for best tile each time we mine, instead of mining multiple times at the same loc
@@ -37,17 +41,14 @@ public class Miner extends Robot {
         MapLocation depositLoc = largestDeposit(true);
         if (depositLoc != null) {
             nav.moveTowards(depositLoc);
+            rc.setIndicatorString("1: " + depositLoc);
         } else if (searchTarget == null || myLoc.distanceSquaredTo(searchTarget) < myType.visionRadiusSquared) {
             searchTarget = randomSearchTarget();
+            rc.setIndicatorString("2: " + searchTarget);
+        } else {
+            rc.setIndicatorString("3: " + searchTarget);
+            nav.moveTowards(searchTarget);
         }
-
-        if (searchTarget != null) {
-            if (!nav.moveTowards(searchTarget)) {
-                brownian();
-            }
-        }
-
-        brownian();
     }
 
     // true: consider gold deposits as well (gold weighted at highestLead * 5); false: only looks for lead deposits

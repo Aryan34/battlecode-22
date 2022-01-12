@@ -50,16 +50,20 @@ public class Soldier extends Robot {
         if (possibleLoc != null) {
             if (myLoc.distanceSquaredTo(possibleLoc) > 35) {
                 nav.moveTowards(possibleLoc);
+                rc.setIndicatorString("1: " + possibleLoc);
             } else {
                 int attackerCount = util.countNearbyFriendlyTroops(RobotType.SOLDIER);
                 if (attackerCount >= ATTACK_COUNT_THRESHOLD) {
+                    rc.setIndicatorString("2: " + possibleLoc);
                     nav.moveTowards(possibleLoc);
                 } else {
                     kite(rc.senseNearbyRobots(myType.visionRadiusSquared, opponentTeam));
                     if (randomTarget == null || myLoc.distanceSquaredTo(randomTarget) < myType.visionRadiusSquared) {
                         randomTarget = getRandomTarget();
                     }
-                    nav.moveTowards(randomTarget);
+                    if (nav.moveTowards(randomTarget)) {
+                        rc.setIndicatorString("3: " + randomTarget);
+                    }
                 }
             }
         }
@@ -67,7 +71,9 @@ public class Soldier extends Robot {
         if (randomTarget == null || myLoc.distanceSquaredTo(randomTarget) < myType.visionRadiusSquared) {
             randomTarget = getRandomTarget();
         }
-        nav.moveTowards(randomTarget);
+        if (nav.moveTowards(randomTarget)) {
+            rc.setIndicatorString("4: " + randomTarget);
+        }
     }
 
     void defend() throws GameActionException {
