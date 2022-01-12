@@ -13,6 +13,7 @@ public class Soldier extends Robot {
 
     MapLocation[] possibleArchonLocs;
     MapLocation possibleLoc = null;
+    MapLocation randomTarget = null;
 
     int possibleArchonLocsChecked = 0;
 
@@ -55,12 +56,18 @@ public class Soldier extends Robot {
                     nav.moveTowards(possibleLoc);
                 } else {
                     kite(rc.senseNearbyRobots(myType.visionRadiusSquared, opponentTeam));
-                    nav.moveRandom();
+                    if (randomTarget == null || myLoc.distanceSquaredTo(randomTarget) < myType.visionRadiusSquared) {
+                        randomTarget = getRandomTarget();
+                    }
+                    nav.moveTowards(randomTarget);
                 }
             }
         }
 
-        brownian();
+        if (randomTarget == null || myLoc.distanceSquaredTo(randomTarget) < myType.visionRadiusSquared) {
+            randomTarget = getRandomTarget();
+        }
+        nav.moveTowards(randomTarget);
     }
 
     void defend() throws GameActionException {
@@ -93,14 +100,14 @@ public class Soldier extends Robot {
     // TODO: Sometimes teammates run away when others are fighting, causing a loss, so fix this
     void kite(RobotInfo[] enemyInfo) throws GameActionException {
         if (util.countNearbyEnemyAttackers(enemyInfo) == 0) {
-            System.out.println("0 ATTACKERS");
+            // System.out.println("0 ATTACKERS");
             MapLocation target = util.lowestHealthTarget();
             if (target != null) {
                 if (myLoc.distanceSquaredTo(target) > 4) {
-                    System.out.println("MOVE TO TARGET");
+                    // System.out.println("MOVE TO TARGET");
                     nav.moveTowards(target);
                 } else {
-                    System.out.println("GET TO LOWEST RUBBLE");
+                    // System.out.println("GET TO LOWEST RUBBLE");
                     Direction dir = directionToLowestRubbleTile(target);
                     if (dir != null && rc.canMove(dir)) {
                         rc.move(dir);
@@ -108,17 +115,17 @@ public class Soldier extends Robot {
                 }
             }
         } else if (util.countNearbyEnemyAttackers(enemyInfo) == 1) {
-            System.out.println("1 ATTACKERS");
+            // System.out.println("1 ATTACKERS");
             MapLocation target = util.getAttackerLocation(enemyInfo);
             RobotInfo enemy = rc.senseRobotAtLocation(target);
-            System.out.println("TARGET: " + target + ", ENEMY: " + enemy);
+            // System.out.println("TARGET: " + target + ", ENEMY: " + enemy);
             if (target != null && enemy != null) {
                 if (enemy.health <= rc.getHealth()) {
                     if (myLoc.distanceSquaredTo(target) > 5) {
-                        System.out.println("TOO FAR FROM ATTACKER");
+                        // System.out.println("TOO FAR FROM ATTACKER");
                         nav.moveTowards(target, true);
                     } else {
-                        System.out.println("CLOSE TO ATTACKER");
+                        // System.out.println("CLOSE TO ATTACKER");
                         Direction dir = directionToLowestRubbleTile(target);
                         if (dir != null && rc.canMove(dir)) {
                             rc.move(dir);
@@ -129,7 +136,7 @@ public class Soldier extends Robot {
                 }
             }
         } else if (util.countNearbyEnemyAttackers(enemyInfo) > util.countNearbyFriendlyTroops(RobotType.SOLDIER)) {
-            System.out.println("TOO MANY ATTACKERS");
+            // System.out.println("TOO MANY ATTACKERS");
             nav.retreatFromEnemies(enemyInfo);
         }
     }
@@ -184,5 +191,11 @@ public class Soldier extends Robot {
         }
 
         return bestDir;
+    }
+
+    MapLocation getRandomTarget() {
+        int randX = rng.nextInt(rc.getMapWidth());
+        int randY = rng.nextInt(rc.getMapHeight());
+        return new MapLocation(randX, randY);
     }
 }

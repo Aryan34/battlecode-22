@@ -2,6 +2,8 @@ package bot6;
 
 import battlecode.common.*;
 
+import java.sql.SQLOutput;
+
 public class Navigation {
     static final Direction[] directions = {
             Direction.NORTH,
@@ -68,6 +70,9 @@ public class Navigation {
     }
 
     boolean moveRandom() throws GameActionException {
+        if (rc.getType() == RobotType.SOLDIER) {
+            System.out.println("SOLDIER GOING RANDO");
+        }
         int randX = (Robot.rng.nextInt(rc.getMapWidth()));
         int randY = (Robot.rng.nextInt(rc.getMapHeight()));
 
@@ -246,23 +251,27 @@ public class Navigation {
         int currDist = myLoc.distanceSquaredTo(target);
         int bestDist = 100000;
         int minRubble = GameConstants.MAX_RUBBLE;
-        Direction bestDir = null;
+        Direction bestDir = Direction.CENTER;
 
-        MapLocation enemyLoc = null;
-        Direction[] closeDirs = evenCloserDirections(myLoc.directionTo(target));
-        for (Direction dir : closeDirs) {
-            int newDist = myLoc.add(dir).distanceSquaredTo(target);
-            if (rc.canMove(dir) && newDist < currDist) {
-                if (bestDir == null || rc.senseRubble(myLoc.add(dir)) < minRubble ||
-                        (rc.senseRubble(myLoc.add(dir)) == minRubble && newDist < bestDist)) {
-                    bestDist = newDist;
-                    minRubble = rc.senseRubble(myLoc.add(dir));
-                    bestDir = dir;
+        for (Direction dir1 : directions) {
+            for (Direction dir2 : evenCloserDirections(myLoc.directionTo(target))) {
+                MapLocation newLoc = myLoc.add(dir1).add(dir2);
+                if (!rc.onTheMap(myLoc.add(dir1)) || !rc.onTheMap(newLoc)) {
+                    continue;
+                }
+                int newDist = newLoc.distanceSquaredTo(target);
+                int newRubble = rc.senseRubble(myLoc.add(dir1)) + rc.senseRubble(newLoc);
+                if (rc.canMove(dir1) && newDist < currDist) {
+                    if (newRubble < minRubble || (newRubble == minRubble && newDist < bestDist)) {
+                        bestDist = newDist;
+                        minRubble = newRubble;
+                        bestDir = dir1;
+                    }
                 }
             }
         }
 
-        if (bestDir != null && rc.canMove(bestDir)) {
+        if (rc.canMove(bestDir)) {
             rc.move(bestDir);
             return true;
         }
@@ -279,19 +288,20 @@ public class Navigation {
         int minRubble = GameConstants.MAX_RUBBLE;
         Direction bestDir = Direction.CENTER;
 
-        Direction[] closeDirs = evenCloserDirections(myLoc.directionTo(target));
-        for (Direction dir : closeDirs) {
-            MapLocation newLoc = myLoc.add(dir);
-            if (!rc.onTheMap(newLoc)) {
-                continue;
-            }
-            int newDist = newLoc.distanceSquaredTo(target);
-            int newRubble = rc.senseRubble(newLoc);
-            if (rc.canMove(dir)) {
-                if (newRubble < minRubble || (newRubble == minRubble && newDist < bestDist)) {
-                    bestDist = newDist;
-                    minRubble = rc.senseRubble(myLoc.add(dir));
-                    bestDir = dir;
+        for (Direction dir1 : directions) {
+            for (Direction dir2 : evenCloserDirections(myLoc.directionTo(target))) {
+                MapLocation newLoc = myLoc.add(dir1).add(dir2);
+                if (!rc.onTheMap(myLoc.add(dir1)) || !rc.onTheMap(newLoc)) {
+                    continue;
+                }
+                int newDist = newLoc.distanceSquaredTo(target);
+                int newRubble = rc.senseRubble(myLoc.add(dir1)) + rc.senseRubble(newLoc);
+                if (rc.canMove(dir1)) {
+                    if (newRubble < minRubble || (newRubble == minRubble && newDist < bestDist)) {
+                        bestDist = newDist;
+                        minRubble = newRubble;
+                        bestDir = dir1;
+                    }
                 }
             }
         }
