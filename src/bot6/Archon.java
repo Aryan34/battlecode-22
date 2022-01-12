@@ -2,8 +2,6 @@ package bot6;
 
 import battlecode.common.*;
 
-import java.util.Arrays;
-
 public class Archon extends Robot {
     static RobotType[] buildOrder1 = {
             RobotType.SOLDIER,
@@ -19,15 +17,15 @@ public class Archon extends Robot {
     };
 
     static RobotType[] buildOrder2 = {
-            RobotType.BUILDER,
+            RobotType.MINER,
             RobotType.MINER,
             RobotType.BUILDER,
             RobotType.BUILDER,
             RobotType.SOLDIER,
             RobotType.MINER,
             RobotType.MINER,
-            RobotType.BUILDER,
-            RobotType.BUILDER,
+            RobotType.SOLDIER,
+            RobotType.SOLDIER,
             RobotType.SOLDIER
     };
 
@@ -62,7 +60,7 @@ public class Archon extends Robot {
             RobotType.SOLDIER,
             RobotType.SOLDIER,
             RobotType.SOLDIER,
-            RobotType.BUILDER,
+            RobotType.SOLDIER,
             RobotType.MINER,
             RobotType.SOLDIER,
             RobotType.SOLDIER,
@@ -75,6 +73,8 @@ public class Archon extends Robot {
 
     int enemySoldierSensedRound;
     int weightedThreatCount;
+    int totalNearbyLead;
+    int initialMinersNeeded;
     boolean enemySoldierSensed;
 
     int buildersSpawned;
@@ -96,7 +96,17 @@ public class Archon extends Robot {
 
         enemySoldierSensedRound = -10000;
         weightedThreatCount = 0;
+        totalNearbyLead = senseTotalNearbyLead();
         enemySoldierSensed = false;
+
+        // TODO: fine-tune these values
+        if (totalNearbyLead < 50) {
+            initialMinersNeeded = 2;
+        } else if (totalNearbyLead < 150) {
+            initialMinersNeeded = 3;
+        } else {
+            initialMinersNeeded = 4;
+        }
 
         buildersSpawned = 0;
         minersSpawned = 0;
@@ -111,14 +121,15 @@ public class Archon extends Robot {
         if (weightedThreatCount > 0) {
             enemySoldierSensed = true;
             enemySoldierSensedRound = roundNum;
+            initialMinersNeeded -= 1;
         } else {
             enemySoldierSensed = false;
         }
 
-        if (enemySoldierSensed) {
-            followBuildOrder(buildOrder1);
-        } else if (comms.getRobotCount(RobotType.MINER) < rc.getArchonCount() * 4) {
+        if (minersSpawned < initialMinersNeeded) {
             followBuildOrder(buildOrder4);
+        } else if (enemySoldierSensed) {
+            followBuildOrder(buildOrder1);
         } else if (roundNum < 150 && rc.getTeamLeadAmount(myTeam) < RobotType.SOLDIER.buildCostLead * rc.getArchonCount()) {
             followBuildOrder(buildOrder3);
         } else {
@@ -129,8 +140,16 @@ public class Archon extends Robot {
             }
         }
 
+        tryRepair();
         // TODO: make this more efficient so archons split the clearing work evenly
         // comms.clearEnemyLocations(36);
+    }
+
+    void tryRepair() throws GameActionException {
+        MapLocation repairTarget = util.lowestHealthRepairTarget();
+        if (rc.canRepair(repairTarget)) {
+            rc.repair(repairTarget);
+        }
     }
 
     void followBuildOrder(RobotType[] buildOrder) throws GameActionException {
@@ -188,19 +207,7 @@ public class Archon extends Robot {
     int countThreatsWeighted() {
         int weightedThreatCount = 0;
         for (RobotInfo info : rc.senseNearbyRobots(myType.visionRadiusSquared, opponentTeam)) {
-            switch (info.type) {
-                case SOLDIER:
-                    weightedThreatCount += 1;
-                    break;
-                case SAGE:
-                    weightedThreatCount += 10;
-                    break;
-                case WATCHTOWER:
-                    weightedThreatCount += 7;
-                    break;
-                default:
-                    break;
-            }
+            weightedThreatCount += util.attackPriority(info.type);
         }
 
         return weightedThreatCount;
@@ -243,5 +250,13 @@ public class Archon extends Robot {
         }
 
         return dir;
+    }
+
+    int senseTotalNearbyLead() throws GameActionException {
+        int total = 0;
+        for (MapLocation loc : rc.senseNearbyLocationsWithLead(myType.visionRadiusSquared)) {
+            total += rc.senseLead(loc);
+        }
+        return total;
     }
 }
