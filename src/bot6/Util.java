@@ -243,4 +243,26 @@ public class Util {
 
         return null;
     }
+
+    // higher int is greater priority
+    int attackPriority(RobotType type) {
+        switch (type) {
+            case ARCHON:
+                return 300;
+            case LABORATORY:
+                return 200;
+            case WATCHTOWER:
+                return 1000;
+            case BUILDER:
+                return 100;
+            case MINER:
+                return 500;
+            case SAGE:
+                return 650;
+            case SOLDIER:
+                return 800;
+            default:
+                return -1;
+        }
+    }
 }

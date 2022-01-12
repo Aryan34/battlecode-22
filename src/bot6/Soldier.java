@@ -93,11 +93,14 @@ public class Soldier extends Robot {
     // TODO: Sometimes teammates run away when others are fighting, causing a loss, so fix this
     void kite(RobotInfo[] enemyInfo) throws GameActionException {
         if (util.countNearbyEnemyAttackers(enemyInfo) == 0) {
+            System.out.println("0 ATTACKERS");
             MapLocation target = util.lowestHealthTarget();
             if (target != null) {
-                if (myLoc.distanceSquaredTo(target) > 2) {
+                if (myLoc.distanceSquaredTo(target) > 4) {
+                    System.out.println("MOVE TO TARGET");
                     nav.moveTowards(target);
                 } else {
+                    System.out.println("GET TO LOWEST RUBBLE");
                     Direction dir = directionToLowestRubbleTile(target);
                     if (dir != null && rc.canMove(dir)) {
                         rc.move(dir);
@@ -105,12 +108,28 @@ public class Soldier extends Robot {
                 }
             }
         } else if (util.countNearbyEnemyAttackers(enemyInfo) == 1) {
+            System.out.println("1 ATTACKERS");
             MapLocation target = util.getAttackerLocation(enemyInfo);
             RobotInfo enemy = rc.senseRobotAtLocation(target);
-            if (target != null && enemy != null && enemy.health <= rc.getHealth()) {
-                nav.moveTowards(target);
+            System.out.println("TARGET: " + target + ", ENEMY: " + enemy);
+            if (target != null && enemy != null) {
+                if (enemy.health <= rc.getHealth()) {
+                    if (myLoc.distanceSquaredTo(target) > 5) {
+                        System.out.println("TOO FAR FROM ATTACKER");
+                        nav.moveTowards(target, true);
+                    } else {
+                        System.out.println("CLOSE TO ATTACKER");
+                        Direction dir = directionToLowestRubbleTile(target);
+                        if (dir != null && rc.canMove(dir)) {
+                            rc.move(dir);
+                        }
+                    }
+                } else {
+                    nav.retreatTowards(myLoc.directionTo(target).opposite());
+                }
             }
-        } else if (util.countNearbyEnemyAttackers(enemyInfo) > util.countNearbyFriendlyTroops(RobotType.SOLDIER)){
+        } else if (util.countNearbyEnemyAttackers(enemyInfo) > util.countNearbyFriendlyTroops(RobotType.SOLDIER)) {
+            System.out.println("TOO MANY ATTACKERS");
             nav.retreatFromEnemies(enemyInfo);
         }
     }
@@ -121,36 +140,13 @@ public class Soldier extends Robot {
         }
 
         MapLocation targetLoc = null;
-        RobotType targetType = null;
-        int targetHealth = 10000;
+        int targetValue = -10000;
 
         for (RobotInfo info : rc.senseNearbyRobots(RobotType.SOLDIER.actionRadiusSquared, opponentTeam)) {
-            if (targetLoc == null) {
+            int currValue = util.attackPriority(info.type) - info.health;
+            if (currValue > targetValue) {
+                targetValue = currValue;
                 targetLoc = info.location;
-                targetType = info.type;
-                targetHealth = info.health;
-            } else {
-                switch (info.type) {
-                    case SAGE:
-                    case WATCHTOWER:
-                    case SOLDIER:
-                        if ((targetType != RobotType.SAGE && targetType != RobotType.WATCHTOWER &&
-                                targetType != RobotType.SOLDIER) || info.health < targetHealth) {
-                            targetLoc = info.location;
-                            targetType = info.type;
-                            targetHealth = info.health;
-                        }
-                    case ARCHON:
-                        break;
-                    default:
-                        if (targetType != RobotType.WATCHTOWER &&
-                                targetType != RobotType.SOLDIER && targetType != RobotType.SAGE
-                                && info.health < targetHealth) {
-                            targetLoc = info.location;
-                            targetType = info.type;
-                            targetHealth = info.health;
-                        }
-                }
             }
         }
 
@@ -188,18 +184,5 @@ public class Soldier extends Robot {
         }
 
         return bestDir;
-    }
-
-    MapLocation randomAttackTarget(int symmetryType) throws GameActionException {
-        switch (symmetryType) {
-            case 0:
-                return nav.reflectHoriz(parentLoc);
-            case 1:
-                return nav.reflectVert(parentLoc);
-            case 2:
-                return nav.reflectDiag(parentLoc);
-        }
-
-        return null;
     }
 }

@@ -140,6 +140,14 @@ public class Navigation {
         return greedy(loc);
     }
 
+    boolean moveTowards(MapLocation loc, boolean lowestRubble) throws GameActionException {
+        if (!rc.isMovementReady()) {
+            return false;
+        }
+
+        return greedyLowestRubble(loc);
+    }
+
     boolean retreatTowards(Direction retreatDir) throws GameActionException {
         if (!rc.isMovementReady()) {
             return false;
@@ -166,34 +174,6 @@ public class Navigation {
         }
 
         if (rc.canMove(bestDir)) {
-            rc.move(bestDir);
-            return true;
-        }
-        return false;
-    }
-
-    boolean moveAway(MapLocation loc) throws GameActionException {
-        if (!rc.isMovementReady()) {
-            return false;
-        }
-
-        int minRubble = 10000;
-        int currRubble = 10000;
-        Direction bestDir = null;
-
-        Direction[] awayDirs = closeDirections(rc.getLocation().directionTo(loc).opposite());
-        for (Direction dir : awayDirs) {
-            if (!rc.onTheMap(rc.getLocation().add(dir))) {
-                continue;
-            }
-            currRubble = rc.senseRubble(rc.getLocation().add(dir));
-            if (currRubble < minRubble) {
-                minRubble = currRubble;
-                bestDir = dir;
-            }
-        }
-
-        if (bestDir != null && rc.canMove(bestDir)) {
             rc.move(bestDir);
             return true;
         }
@@ -283,6 +263,40 @@ public class Navigation {
         }
 
         if (bestDir != null && rc.canMove(bestDir)) {
+            rc.move(bestDir);
+            return true;
+        }
+        return false;
+    }
+
+    boolean greedyLowestRubble(MapLocation target) throws GameActionException {
+        if (!rc.isMovementReady()) {
+            return false;
+        }
+
+        MapLocation myLoc = rc.getLocation();
+        int bestDist = myLoc.distanceSquaredTo(target);
+        int minRubble = GameConstants.MAX_RUBBLE;
+        Direction bestDir = Direction.CENTER;
+
+        Direction[] closeDirs = evenCloserDirections(myLoc.directionTo(target));
+        for (Direction dir : closeDirs) {
+            MapLocation newLoc = myLoc.add(dir);
+            if (!rc.onTheMap(newLoc)) {
+                continue;
+            }
+            int newDist = newLoc.distanceSquaredTo(target);
+            int newRubble = rc.senseRubble(newLoc);
+            if (rc.canMove(dir)) {
+                if (newRubble < minRubble || (newRubble == minRubble && newDist < bestDist)) {
+                    bestDist = newDist;
+                    minRubble = rc.senseRubble(myLoc.add(dir));
+                    bestDir = dir;
+                }
+            }
+        }
+
+        if (rc.canMove(bestDir)) {
             rc.move(bestDir);
             return true;
         }

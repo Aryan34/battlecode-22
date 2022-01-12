@@ -25,8 +25,10 @@ public class Miner extends Robot {
         // TODO: possibly research for best tile each time we mine, instead of mining multiple times at the same loc
         MapLocation neighboringDepositLoc = largestNeighboringDeposit(true);
         if (neighboringDepositLoc != null) {
-            while ((rc.senseGold(neighboringDepositLoc) > 0 && rc.canMineGold(neighboringDepositLoc)) ||
-                    (rc.senseLead(neighboringDepositLoc) > 1 && rc.canMineLead(neighboringDepositLoc))) {
+            while (rc.senseGold(neighboringDepositLoc) > 0 && rc.canMineGold(neighboringDepositLoc)) {
+                rc.mineGold(neighboringDepositLoc);
+            }
+            while (rc.senseLead(neighboringDepositLoc) > 1 && rc.canMineLead(neighboringDepositLoc)) {
                 rc.mineLead(neighboringDepositLoc);
             }
         }
@@ -111,15 +113,8 @@ public class Miner extends Robot {
 
     // TODO: get better miner exploration code
     MapLocation randomSearchTarget() throws GameActionException {
-        switch (rc.getID() % 3) {
-            case 0:
-                return nav.reflectHoriz(parentLoc);
-            case 1:
-                return nav.reflectVert(parentLoc);
-            case 2:
-                return nav.reflectDiag(parentLoc);
-        }
-
-        return nav.reflectDiag(parentLoc);
+        int randX = rng.nextInt(rc.getMapWidth());
+        int randY = rng.nextInt(rc.getMapHeight());
+        return new MapLocation(randX, randY);
     }
 }
