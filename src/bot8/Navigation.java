@@ -136,26 +136,34 @@ public class Navigation {
         return greedyLowestRubble(loc);
     }
 
-    boolean retreatTowards(Direction retreatDir) throws GameActionException {
+    boolean retreatFrom(MapLocation target) throws GameActionException {
         if (!rc.isMovementReady()) {
             return false;
         }
 
         RobotType myType = rc.getType();
         MapLocation myLoc = rc.getLocation();
-        Direction bestDir = retreatDir;
+        Direction bestDir = Direction.CENTER;
+        int bestDist = 100000;
 
         // if rubble at myLoc is the least, then attack-type droid will stay put and fight => most dmg done to enemy
-        int leastRubble = rc.senseRubble(myLoc);
+        int minRubble = rc.senseRubble(myLoc);
         if (myType == RobotType.BUILDER || myType == RobotType.MINER) {
-            leastRubble = 1000;
+            minRubble = 1000;
         }
 
-        for (Direction dir : closeDirections(retreatDir)) {
+        System.out.println("LEAST RUBBLE: " + minRubble);
+        for (Direction dir : closeDirections(myLoc.directionTo(target).opposite())) {
             MapLocation newLoc = myLoc.add(dir);
-            if (rc.canMove(dir) && rc.canSenseLocation(newLoc)) {
-                if (rc.senseRubble(newLoc) < leastRubble) {
-                    leastRubble = rc.senseRubble(newLoc);
+            if (!rc.onTheMap(newLoc)) {
+                continue;
+            }
+            int newDist = newLoc.distanceSquaredTo(target);
+            int newRubble = rc.senseRubble(newLoc);
+            if (rc.canMove(dir)) {
+                if (newRubble < minRubble || (newRubble == minRubble && newDist < bestDist)) {
+                    bestDist = newDist;
+                    minRubble = newRubble;
                     bestDir = dir;
                 }
             }
@@ -186,7 +194,7 @@ public class Navigation {
         }
 
         if (bestDir != null && rc.canMove(bestDir)) {
-            return retreatTowards(bestDir);
+            return retreatFrom(rc.getLocation().add(bestDir));
         }
         return false;
     }

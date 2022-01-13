@@ -11,8 +11,8 @@ public class Util {
         this.robot = robot;
     }
 
-    boolean attackerType() {
-        return robot.myType == RobotType.SAGE || robot.myType == RobotType.SOLDIER || robot.myType == RobotType.WATCHTOWER;
+    boolean attackerType(RobotType type) {
+        return type == RobotType.SAGE || type == RobotType.SOLDIER || type == RobotType.WATCHTOWER;
     }
 
     boolean tryBuild(RobotType type, Direction dir) throws GameActionException {
@@ -232,7 +232,7 @@ public class Util {
     int countNearbyFriendlyAttackers(RobotInfo[] nearby) {
         int count = 0;
         for (RobotInfo info : nearby) {
-            if (info.type == RobotType.SAGE || info.type == RobotType.SOLDIER || info.type == RobotType.WATCHTOWER) {
+            if (attackerType(info.type)) {
                 ++count;
             }
         }
@@ -243,7 +243,7 @@ public class Util {
     int countNearbyEnemyAttackers(RobotInfo[] nearby) {
         int count = 0;
         for (RobotInfo info : nearby) {
-            if (info.type == RobotType.SAGE || info.type == RobotType.SOLDIER || info.type == RobotType.WATCHTOWER) {
+            if (attackerType(info.type)) {
                 ++count;
             }
         }
@@ -251,9 +251,20 @@ public class Util {
         return count;
     }
 
+    int nearbyEnemyAttackersTotalHealth(RobotInfo[] nearby) {
+        int totalHealth = 0;
+        for (RobotInfo info : nearby) {
+            if (attackerType(info.type)) {
+                totalHealth += info.health;
+            }
+        }
+
+        return totalHealth;
+    }
+
     MapLocation getAttackerLocation(RobotInfo[] enemyInfo) {
         for (RobotInfo info : enemyInfo) {
-            if (info.type == RobotType.SAGE || info.type == RobotType.SOLDIER || info.type == RobotType.WATCHTOWER) {
+            if (attackerType(info.type)) {
                 return info.location;
             }
         }
