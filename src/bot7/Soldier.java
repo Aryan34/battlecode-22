@@ -9,6 +9,7 @@ public class Soldier extends Robot {
         ATTACK,
         DEFEND
     }
+
     Mode mode;
 
     MapLocation[] possibleArchonLocs;
@@ -38,33 +39,15 @@ public class Soldier extends Robot {
     void attack() throws GameActionException {
         fight(rc.senseNearbyRobots(myType.visionRadiusSquared, opponentTeam));
         possibleArchonLocs = comms.getEnemyArchonLocs();
-
-        int lowestDist = 10000;
-        for (MapLocation loc : possibleArchonLocs) {
-            if (loc != null && myLoc.distanceSquaredTo(loc) < lowestDist) {
-                lowestDist = myLoc.distanceSquaredTo(loc);
-                possibleLoc = loc;
-            }
-        }
+        possibleLoc = util.closestInArray(possibleArchonLocs);
 
         if (possibleLoc != null) {
-            if (myLoc.distanceSquaredTo(possibleLoc) > 35) {
+            if (myLoc.distanceSquaredTo(possibleLoc) > myType.actionRadiusSquared) {
                 nav.moveTowards(possibleLoc);
                 rc.setIndicatorString("1: " + possibleLoc);
             } else {
-                int attackerCount = util.countNearbyFriendlyTroops(RobotType.SOLDIER);
-                if (attackerCount >= ATTACK_COUNT_THRESHOLD) {
-                    rc.setIndicatorString("2: " + possibleLoc);
-                    nav.moveTowards(possibleLoc);
-                } else {
-                    kite(rc.senseNearbyRobots(myType.visionRadiusSquared, opponentTeam));
-                    if (randomTarget == null || myLoc.distanceSquaredTo(randomTarget) < myType.visionRadiusSquared) {
-                        randomTarget = getRandomTarget();
-                    }
-                    if (nav.moveTowards(randomTarget)) {
-                        rc.setIndicatorString("3: " + randomTarget);
-                    }
-                }
+                kite(rc.senseNearbyRobots(myType.visionRadiusSquared, opponentTeam));
+                rc.setIndicatorString("2: KITING");
             }
         }
 
@@ -84,20 +67,6 @@ public class Soldier extends Robot {
         brownian();
     }
 
-    MapLocation closestEnemyLoc() throws GameActionException {
-        MapLocation closest = null;
-        int lowestDist = 10000;
-
-        for (MapLocation loc : comms.getEnemyLocations()) {
-            if (loc != null && myLoc.distanceSquaredTo(loc) < lowestDist) {
-                closest = loc;
-                lowestDist = myLoc.distanceSquaredTo(loc);
-            }
-        }
-
-        return closest;
-    }
-
     void fight(RobotInfo[] enemyInfo) throws GameActionException {
         kite(enemyInfo);
         optimalAttack();
@@ -105,44 +74,43 @@ public class Soldier extends Robot {
 
     // TODO: Sometimes teammates run away when others are fighting, causing a loss, so fix this
     void kite(RobotInfo[] enemyInfo) throws GameActionException {
-        if (util.countNearbyEnemyAttackers(enemyInfo) == 0) {
-            // System.out.println("0 ATTACKERS");
+        int nearbyEnemyAttackers = util.countNearbyEnemyAttackers(enemyInfo);
+        if (nearbyEnemyAttackers == 0) {
+            System.out.println("0 ATTACKERS");
             MapLocation target = util.lowestHealthTarget();
             if (target != null) {
                 if (myLoc.distanceSquaredTo(target) > 4) {
-                    // System.out.println("MOVE TO TARGET");
+                    System.out.println("MOVE TO TARGET: " + target);
                     nav.moveTowards(target);
                 } else {
-                    // System.out.println("GET TO LOWEST RUBBLE");
-                    Direction dir = directionToLowestRubbleTile(target);
-                    if (dir != null && rc.canMove(dir)) {
-                        rc.move(dir);
-                    }
+                    Direction dir = nav.directionToLowestRubbleTile(target);
+                    System.out.println("DIR TO LOWEST RUBBLE TILE: " + dir);
+                    nav.tryMove(dir);
                 }
             }
-        } else if (util.countNearbyEnemyAttackers(enemyInfo) == 1) {
-            // System.out.println("1 ATTACKERS");
+        } else if (nearbyEnemyAttackers == 1) {
+            System.out.println("1 ATTACKERS");
             MapLocation target = util.getAttackerLocation(enemyInfo);
             RobotInfo enemy = rc.senseRobotAtLocation(target);
-            // System.out.println("TARGET: " + target + ", ENEMY: " + enemy);
+            System.out.println("TARGET: " + target + ", ENEMY: " + enemy);
             if (target != null && enemy != null) {
-                if (enemy.health <= rc.getHealth()) {
+                if (enemy.health <= rc.getHealth() && rc.senseRubble(myLoc) <= rc.senseRubble(target)) {
                     if (myLoc.distanceSquaredTo(target) > 5) {
-                        // System.out.println("TOO FAR FROM ATTACKER");
+                        System.out.println("TOO FAR FROM ATTACKER");
                         nav.moveTowards(target, true);
                     } else {
-                        // System.out.println("CLOSE TO ATTACKER");
-                        Direction dir = directionToLowestRubbleTile(target);
-                        if (dir != null && rc.canMove(dir)) {
-                            rc.move(dir);
-                        }
+                        System.out.println("CLOSE TO ATTACKER");
+                        Direction dir = nav.directionToLowestRubbleTile(target);
+                        System.out.println("DIR TO LOWEST RUBBLE TILE: " + dir);
+                        nav.tryMove(dir);
                     }
                 } else {
+                    System.out.println("RETREAT TOWARDS: " + myLoc.directionTo(target).opposite());
                     nav.retreatTowards(myLoc.directionTo(target).opposite());
                 }
             }
-        } else if (util.countNearbyEnemyAttackers(enemyInfo) > util.countNearbyFriendlyTroops(RobotType.SOLDIER)) {
-            // System.out.println("TOO MANY ATTACKERS");
+        } else if (nearbyEnemyAttackers > util.countNearbyFriendlyTroops(RobotType.SOLDIER)) {
+            System.out.println("TOO MANY ATTACKERS");
             nav.retreatFromEnemies(enemyInfo);
         }
     }
@@ -172,31 +140,6 @@ public class Soldier extends Robot {
                 }
             }
         }
-    }
-
-    Direction directionToLowestRubbleTile(MapLocation target) throws GameActionException {
-        if (!rc.isMovementReady()) {
-            return null;
-        }
-
-        Direction bestDir = Direction.CENTER;
-        int lowestRubble = rc.senseRubble(myLoc);
-        int lowestDistance = 100;
-
-        for (Direction dir : Navigation.directions) {
-            MapLocation dest = myLoc.add(dir);
-            if (rc.canMove(dir) && rc.onTheMap(dest)) {
-                int rubble = rc.senseRubble(dest);
-                if (rubble < lowestRubble ||
-                        (rubble == lowestRubble && dest.distanceSquaredTo(target) < lowestDistance)) {
-                    bestDir = dir;
-                    lowestRubble = rubble;
-                    lowestDistance = dest.distanceSquaredTo(target);
-                }
-            }
-        }
-
-        return bestDir;
     }
 
     MapLocation getRandomTarget() {

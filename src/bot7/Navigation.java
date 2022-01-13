@@ -58,7 +58,7 @@ public class Navigation {
         };
     }
 
-    static final int RECENTLY_VISITED_THRESHOLD = 10;
+    static final int RECENTLY_VISITED_THRESHOLD = 15;
 
     RobotController rc;
 
@@ -68,18 +68,23 @@ public class Navigation {
         this.rc = rc;
     }
 
+    boolean tryMove(Direction dir) throws GameActionException {
+        if (dir != null && rc.canMove(dir)) {
+            rc.move(dir);
+            MapLocation currLoc = rc.getLocation();
+            visited[currLoc.x][currLoc.y] = rc.getRoundNum();
+            return true;
+        }
+        return false;
+    }
+
     boolean moveRandomCardinal() throws GameActionException {
         if (!rc.isMovementReady()) {
             return false;
         }
 
         Direction dir = cardinalDirections[Robot.rng.nextInt(cardinalDirections.length)];
-        if (rc.canMove(dir)) {
-            rc.move(dir);
-            return true;
-        }
-
-        return false;
+        return tryMove(dir);
     }
 
     boolean moveAwayFromArchon(MapLocation loc) throws GameActionException {
@@ -112,11 +117,7 @@ public class Navigation {
             }
         }
 
-        if (bestDir != null && rc.canMove(bestDir)) {
-            rc.move(bestDir);
-            return true;
-        }
-        return false;
+        return tryMove(bestDir);
     }
 
     boolean moveTowards(MapLocation loc) throws GameActionException {
@@ -152,7 +153,7 @@ public class Navigation {
 
         for (Direction dir : closeDirections(retreatDir)) {
             MapLocation newLoc = myLoc.add(dir);
-            if (rc.onTheMap(newLoc) && rc.canSenseLocation(newLoc)) {
+            if (rc.canMove(dir) && rc.canSenseLocation(newLoc)) {
                 if (rc.senseRubble(newLoc) < leastRubble) {
                     leastRubble = rc.senseRubble(newLoc);
                     bestDir = dir;
@@ -160,13 +161,7 @@ public class Navigation {
             }
         }
 
-        if (rc.canMove(bestDir)) {
-            rc.move(bestDir);
-            MapLocation currLoc = rc.getLocation();
-            visited[currLoc.x][currLoc.y] = rc.getRoundNum();
-            return true;
-        }
-        return false;
+        return tryMove(bestDir);
     }
 
     boolean retreatFromEnemies(RobotInfo[] enemyInfo) throws GameActionException {
@@ -217,15 +212,12 @@ public class Navigation {
                     multiplier = 0;
                     break;
             }
-            heuristic += (1.0 /dist) * multiplier;
+            heuristic += (1.0 / dist) * multiplier;
         }
 
         return heuristic;
     }
 
-    // treat all rubble above threshold as impassable, otherwise move towards target
-    // greedily -> choose lowest rubble neighbor tile that doesn't go backwards
-    // [directionToTarget.opposite, directionToTarget.opposite.{rotateRight, rotateLeft}]
     boolean greedy(MapLocation target) throws GameActionException {
         if (!rc.isMovementReady()) {
             return false;
@@ -237,11 +229,12 @@ public class Navigation {
         int minRubble = GameConstants.MAX_RUBBLE;
         Direction bestDir = Direction.CENTER;
 
-        for (Direction dir1 : directions) {
+        for (Direction dir1 : evenCloserDirections(myLoc.directionTo(target))) {
             for (Direction dir2 : evenCloserDirections(myLoc.directionTo(target))) {
                 MapLocation newLoc = myLoc.add(dir1).add(dir2);
                 if (!rc.onTheMap(myLoc.add(dir1)) || !rc.onTheMap(newLoc) ||
-                        rc.getRoundNum() - visited[myLoc.add(dir1).x][myLoc.add(dir1).y] < 15) {
+                        (rc.getRoundNum() - visited[myLoc.add(dir1).x][myLoc.add(dir1).y] < 15 &&
+                                visited[myLoc.add(dir1).x][myLoc.add(dir1).y] != 0)) {
                     continue;
                 }
                 int newDist = newLoc.distanceSquaredTo(target);
@@ -256,13 +249,16 @@ public class Navigation {
             }
         }
 
-        if (rc.canMove(bestDir)) {
-            rc.move(bestDir);
-            MapLocation currLoc = rc.getLocation();
-            visited[currLoc.x][currLoc.y] = rc.getRoundNum();
-            return true;
+        if (rc.canSenseLocation(target)) {
+            RobotInfo info = rc.senseRobotAtLocation(target);
+            if (info != null) {
+                if (rc.senseRubble(myLoc) > rc.senseRubble(target)) {
+                    return false;
+                }
+            }
         }
-        return false;
+
+        return tryMove(bestDir);
     }
 
     boolean greedyLowestRubble(MapLocation target) throws GameActionException {
@@ -275,7 +271,7 @@ public class Navigation {
         int minRubble = GameConstants.MAX_RUBBLE;
         Direction bestDir = Direction.CENTER;
 
-        for (Direction dir1 : directions) {
+        for (Direction dir1 : evenCloserDirections(myLoc.directionTo(target))) {
             for (Direction dir2 : evenCloserDirections(myLoc.directionTo(target))) {
                 MapLocation newLoc = myLoc.add(dir1).add(dir2);
                 if (!rc.onTheMap(myLoc.add(dir1)) || !rc.onTheMap(newLoc) ||
@@ -295,13 +291,42 @@ public class Navigation {
             }
         }
 
-        if (rc.canMove(bestDir)) {
-            rc.move(bestDir);
-            MapLocation currLoc = rc.getLocation();
-            visited[currLoc.x][currLoc.y] = rc.getRoundNum();
-            return true;
+        if (rc.canSenseLocation(target)) {
+            RobotInfo info = rc.senseRobotAtLocation(target);
+            if (info != null) {
+                if (rc.senseRubble(myLoc) > rc.senseRubble(target)) {
+                    return false;
+                }
+            }
         }
-        return false;
+
+        return tryMove(bestDir);
+    }
+
+    Direction directionToLowestRubbleTile(MapLocation target) throws GameActionException {
+        if (!rc.isMovementReady()) {
+            return null;
+        }
+
+        MapLocation myLoc = rc.getLocation();
+        Direction bestDir = null;
+        int lowestRubble = rc.senseRubble(myLoc);
+        int lowestDistance = 100;
+
+        for (Direction dir : Navigation.directions) {
+            MapLocation dest = myLoc.add(dir);
+            if (rc.canMove(dir) && rc.onTheMap(dest)) {
+                int rubble = rc.senseRubble(dest);
+                if (rubble < lowestRubble ||
+                        (rubble == lowestRubble && dest.distanceSquaredTo(target) < lowestDistance)) {
+                    bestDir = dir;
+                    lowestRubble = rubble;
+                    lowestDistance = dest.distanceSquaredTo(target);
+                }
+            }
+        }
+
+        return bestDir;
     }
 
     MapLocation reflectHoriz(MapLocation loc) {

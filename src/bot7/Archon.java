@@ -138,6 +138,8 @@ public class Archon extends Robot {
                 followBuildOrder(buildOrder4);
             } else if (rc.getTeamLeadAmount(myTeam) < RobotType.SOLDIER.buildCostLead * rc.getArchonCount()) {
                 followBuildOrder(buildOrder3);
+            } else {
+                followBuildOrder(buildOrder1);
             }
         } else {
             if (teamLead > 750 && buildersSpawned < 8) {

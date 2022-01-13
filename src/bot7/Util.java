@@ -11,6 +11,10 @@ public class Util {
         this.robot = robot;
     }
 
+    boolean attackerType() {
+        return robot.myType == RobotType.SAGE || robot.myType == RobotType.SOLDIER || robot.myType == RobotType.WATCHTOWER;
+    }
+
     boolean tryBuild(RobotType type, Direction dir) throws GameActionException {
         if (rc.canBuildRobot(type, dir)) {
             rc.buildRobot(type, dir);
@@ -70,6 +74,19 @@ public class Util {
         }
 
         return closest;
+    }
+
+    MapLocation closestInArray(MapLocation[] locations) throws GameActionException {
+        MapLocation bestLoc = null;
+        int lowestDist = 10000;
+        for (MapLocation loc : locations) {
+            if (loc != null && robot.myLoc.distanceSquaredTo(loc) < lowestDist) {
+                lowestDist = robot.myLoc.distanceSquaredTo(loc);
+                bestLoc = loc;
+            }
+        }
+
+        return bestLoc;
     }
 
     int distanceToClosestFriendlyArchon() throws GameActionException {
