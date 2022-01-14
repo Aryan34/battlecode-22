@@ -116,11 +116,15 @@ public class Soldier extends Robot {
                 }
             }
         } else if (rc.getHealth() < util.nearbyEnemyAttackersTotalHealth(enemyInfo)) {
-            // System.out.println("TOO MANY ATTACKERS");
-            MapLocation closestEnemyAttacker = util.closestAttackTarget();
-            if (closestEnemyAttacker != null) {
-                nav.retreatFrom(closestEnemyAttacker);
-            }
+            kiteMultiple(enemyInfo);
+        }
+    }
+
+    void kiteMultiple(RobotInfo[] enemyInfo) throws GameActionException {
+        System.out.println("TOO MANY ATTACKERS");
+        MapLocation closestEnemyAttacker = util.closestAttackTarget();
+        if (closestEnemyAttacker != null) {
+            nav.retreatFrom(closestEnemyAttacker);
         }
     }
 

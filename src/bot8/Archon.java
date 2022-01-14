@@ -129,8 +129,7 @@ public class Archon extends Robot {
         }
 
         if (minersSpawned < initialMinersNeeded) {
-            followBuildOrder(buildOrder4);
-            buildIndex = 0;
+            tryBuild(RobotType.MINER);
         } else if (enemySoldierSensed) {
             followBuildOrder(buildOrder1);
         } else if (roundNum < 150) {
@@ -162,21 +161,22 @@ public class Archon extends Robot {
     }
 
     void followBuildOrder(RobotType[] buildOrder) throws GameActionException {
-        if (comms.getArchonId(myLoc) == comms.getBuildMutex() || roundNum > 200) {
-            if (tryBuild(buildOrder[buildIndex % 10])) {
-                ++buildIndex;
-                comms.updateBuildMutex();
-            }
-        }
+        tryBuild(buildOrder[buildIndex % 10]);
     }
 
     boolean tryBuild(RobotType type) throws GameActionException {
+        if (comms.getArchonId(myLoc) != comms.getBuildMutex() && roundNum < 200) {
+            return false;
+        }
+
         Direction dir = Navigation.directions[Robot.rng.nextInt(Navigation.directions.length)];
         if (type == RobotType.MINER) {
             dir = findBestLeadDeposit();
         }
 
         if (rc.canBuildRobot(type, dir)) {
+            ++buildIndex;
+            comms.updateBuildMutex();
             rc.buildRobot(type, dir);
             updateRecentlySpawned(type);
             switch (type) {
@@ -193,6 +193,8 @@ public class Archon extends Robot {
         } else {
             for (Direction closeDir : Navigation.closeDirections(dir)) {
                 if (rc.canBuildRobot(type, closeDir)) {
+                    ++buildIndex;
+                    comms.updateBuildMutex();
                     rc.buildRobot(type, closeDir);
                     updateRecentlySpawned(type);
                     switch (type) {

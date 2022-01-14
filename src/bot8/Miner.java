@@ -19,7 +19,7 @@ public class Miner extends Robot {
 
         RobotInfo[] nearbyEnemies = rc.senseNearbyRobots(myType.visionRadiusSquared, opponentTeam);
         for (RobotInfo info : nearbyEnemies) {
-            if (info.type == RobotType.SAGE || info.type == RobotType.SOLDIER || info.type == RobotType.WATCHTOWER) {
+            if (util.attackerType(info.type)) {
                 nav.retreatFromEnemies(nearbyEnemies);
                 rc.setIndicatorString("RETREAT");
                 break;
@@ -45,7 +45,9 @@ public class Miner extends Robot {
         } else if (searchTarget == null || myLoc.distanceSquaredTo(searchTarget) < myType.visionRadiusSquared) {
             searchTarget = randomSearchTarget();
             rc.setIndicatorString("2: " + searchTarget);
-        } else {
+        }
+
+        if (searchTarget != null) {
             rc.setIndicatorString("3: " + searchTarget);
             nav.moveTowards(searchTarget);
         }
@@ -55,7 +57,7 @@ public class Miner extends Robot {
     MapLocation largestDeposit(boolean searchForGold) throws GameActionException {
         MapLocation depositLoc = null;
         int highestGold = 0;
-        int highestLead = 0; // TODO: maybe set to -25 to allow for neg. values too?
+        int highestLead = -1000;
 
         for (MapLocation loc : rc.senseNearbyLocationsWithLead(RobotType.MINER.visionRadiusSquared)) {
             if (rc.senseLead(loc) >= 2) {
@@ -68,7 +70,7 @@ public class Miner extends Robot {
         }
 
         if (searchForGold) {
-            highestGold = highestLead * 5; // TODO: once we get better lab code, find a better constant than 5
+            highestGold = highestLead / 2; // TODO: once we get better lab code, find a better constant than 2
             for (MapLocation loc : rc.senseNearbyLocationsWithGold(RobotType.MINER.visionRadiusSquared)) {
                 int value = rc.senseGold(loc) - myLoc.distanceSquaredTo(loc);
                 if (value > highestGold) {
@@ -114,8 +116,142 @@ public class Miner extends Robot {
 
     // TODO: get better miner exploration code
     MapLocation randomSearchTarget() throws GameActionException {
-        int randX = rng.nextInt(rc.getMapWidth());
-        int randY = rng.nextInt(rc.getMapHeight());
-        return new MapLocation(randX, randY);
+        Direction dir = randomSearchDirection();
+        switch (dir) {
+            case NORTH:
+                return new MapLocation(myLoc.x, rc.getMapHeight() - 1);
+            case EAST:
+                return new MapLocation(rc.getMapWidth() - 1, myLoc.y);
+            case SOUTH:
+                return new MapLocation(myLoc.x, 0);
+            case WEST:
+                return new MapLocation(0, myLoc.y);
+            case NORTHEAST:
+                if (rc.getMapWidth() - myLoc.x < rc.getMapHeight() - myLoc.y) {
+                    return new MapLocation(rc.getMapWidth() - 1, myLoc.y + rc.getMapWidth() - myLoc.x - 1);
+                } else {
+                    return new MapLocation(myLoc.x + rc.getMapHeight() - myLoc.y - 1, rc.getMapHeight() - 1);
+                }
+            case SOUTHEAST:
+                if (rc.getMapWidth() - myLoc.x - 1 < myLoc.y) {
+                    return new MapLocation(rc.getMapWidth() - 1, myLoc.y - (rc.getMapWidth() - myLoc.x - 1));
+                } else {
+                    return new MapLocation(rc.getMapWidth() - myLoc.y - 1, 0);
+                }
+            case SOUTHWEST:
+                if (myLoc.x < myLoc.y) {
+                    return new MapLocation(0, myLoc.y - myLoc.x);
+                } else {
+                    return new MapLocation(myLoc.x - myLoc.y, 0);
+                }
+            case NORTHWEST:
+                if (myLoc.x < rc.getMapHeight() - myLoc.y - 1) {
+                    return new MapLocation(0, rc.getMapHeight() - myLoc.x - 1);
+                } else {
+                    return new MapLocation(myLoc.x - (rc.getMapHeight() - myLoc.y - 1), rc.getMapHeight() - 1);
+                }
+            default:
+                return null;
+        }
+    }
+
+    Direction randomSearchDirection() throws GameActionException {
+        // northeast
+        if (rc.getMapWidth() - parentLoc.x - 1 <= 5 && rc.getMapHeight() - parentLoc.y - 1 <= 5) {
+            Direction[] directions = {
+                    Direction.SOUTHEAST,
+                    Direction.SOUTH,
+                    Direction.SOUTHWEST,
+                    Direction.WEST,
+                    Direction.NORTHWEST,
+            };
+            return directions[(Clock.getBytecodeNum() * rc.getID()) % 5];
+        }
+
+        // southeast
+        if (rc.getMapWidth() - parentLoc.x - 1 <= 5 && parentLoc.y <= 5) {
+            Direction[] directions = {
+                    Direction.NORTH,
+                    Direction.NORTHEAST,
+                    Direction.SOUTHWEST,
+                    Direction.WEST,
+                    Direction.NORTHWEST,
+            };
+            return directions[(Clock.getBytecodeNum() * rc.getID()) % 5];
+        }
+
+        // southwest
+        if (parentLoc.x <= 5 && parentLoc.y <= 5) {
+            Direction[] directions = {
+                    Direction.NORTH,
+                    Direction.NORTHEAST,
+                    Direction.EAST,
+                    Direction.SOUTHEAST,
+                    Direction.NORTHWEST,
+            };
+            return directions[(Clock.getBytecodeNum() * rc.getID()) % 5];
+        }
+
+        // northwest
+        if (parentLoc.x <= 5 && rc.getMapHeight() - parentLoc.y - 1 <= 5) {
+            Direction[] directions = {
+                    Direction.NORTHEAST,
+                    Direction.EAST,
+                    Direction.SOUTHEAST,
+                    Direction.SOUTH,
+                    Direction.SOUTHWEST,
+            };
+            return directions[(Clock.getBytecodeNum() * rc.getID()) % 5];
+        }
+
+        // north
+        if (rc.getMapHeight() - parentLoc.y - 1 <= 5) {
+            Direction[] directions = {
+                    Direction.EAST,
+                    Direction.SOUTHEAST,
+                    Direction.SOUTH,
+                    Direction.SOUTHWEST,
+                    Direction.WEST,
+            };
+            return directions[(Clock.getBytecodeNum() * rc.getID()) % 5];
+        }
+
+        // east
+        if (rc.getMapWidth() - parentLoc.x - 1 <= 5) {
+            Direction[] directions = {
+                    Direction.NORTH,
+                    Direction.SOUTH,
+                    Direction.SOUTHWEST,
+                    Direction.WEST,
+                    Direction.NORTHWEST,
+            };
+            return directions[(Clock.getBytecodeNum() * rc.getID()) % 5];
+        }
+
+        // south
+        if (parentLoc.y <= 5) {
+            Direction[] directions = {
+                    Direction.NORTH,
+                    Direction.NORTHEAST,
+                    Direction.EAST,
+                    Direction.WEST,
+                    Direction.NORTHWEST,
+            };
+            return directions[(Clock.getBytecodeNum() * rc.getID()) % 5];
+        }
+
+        // west
+        if (parentLoc.x <= 5) {
+            Direction[] directions = {
+                    Direction.NORTH,
+                    Direction.NORTHEAST,
+                    Direction.EAST,
+                    Direction.SOUTHEAST,
+                    Direction.SOUTH,
+            };
+            return directions[(Clock.getBytecodeNum() * rc.getID()) % 5];
+        }
+
+        return Navigation.directions[(Clock.getBytecodesLeft() * rng.nextInt(1337) + Clock.getBytecodeNum() * rc.getID()) % 8];
     }
 }

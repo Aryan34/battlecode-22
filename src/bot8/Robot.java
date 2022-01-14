@@ -21,6 +21,7 @@ public class Robot {
     static int turnCount;
     boolean considerDead;
     boolean enemyArchonCountFlag;
+    boolean detectEnemiesFlag;
 
     static final Random rng = new Random(6147);
     static final int LATTICE_MOD = 2;
@@ -78,7 +79,7 @@ public class Robot {
         updateBounds();
         updateLifeStatus();
         searchForEnemyArchon();
-        // reportEnemyLocs();
+        tryDetectEnemies();
 
         ++turnCount;
     }
@@ -126,15 +127,16 @@ public class Robot {
         }
     }
 
-    void reportEnemyLocs() throws GameActionException {
-        // TODO: with current reset mechanic, archons cannot report enemy locs
-        if (myType == RobotType.ARCHON) {
+    void tryDetectEnemies() throws GameActionException {
+        if (detectEnemiesFlag) {
             return;
         }
 
-        MapLocation target = util.closestTarget();
-        if (target != null) {
-            comms.addEnemyLocation(target);
+        if (comms.enemyDetected()) {
+            detectEnemiesFlag = true;
+        } else if (rc.senseNearbyRobots(myType.visionRadiusSquared, opponentTeam).length > 0) {
+            comms.reportEnemyDetected();
+            detectEnemiesFlag = true;
         }
     }
 

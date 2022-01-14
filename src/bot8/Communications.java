@@ -154,43 +154,14 @@ public class Communications {
         return count;
     }
 
-    void addEnemyLocation(MapLocation loc) throws GameActionException {
-        int encoded = encodeLocation(loc);
-        for (int i = 23; i < 59; ++i) {
-            int value = rc.readSharedArray(i);
-            if (value == 0) {
-                rc.writeSharedArray(i, encoded);
-                return;
-            } else if (loc.distanceSquaredTo(decodeLocation(value)) < 8) {
-                return;
-            }
+    void reportEnemyDetected() throws GameActionException {
+        if (rc.readSharedArray(24) != 1) {
+            rc.writeSharedArray(24, 1);
         }
     }
 
-    MapLocation[] getEnemyLocations() throws GameActionException {
-        MapLocation[] enemyLocs = new MapLocation[36];
-        for (int i = 23; i < 59; ++i) {
-            int encoded = rc.readSharedArray(i);
-            if (encoded != 0) {
-                enemyLocs[i - 23] = decodeLocation(encoded);
-            } else {
-                enemyLocs[i - 23] = null;
-            }
-        }
-
-        return enemyLocs;
-    }
-
-    void clearEnemyLocations(int clearCount) throws GameActionException {
-        for (int i = 23; i < 59; ++i) {
-            if (rc.readSharedArray(i) != 0) {
-                rc.writeSharedArray(i, 0);
-                --clearCount;
-                if (clearCount == 0) {
-                    return;
-                }
-            }
-        }
+    boolean enemyDetected() throws GameActionException {
+        return rc.readSharedArray(24) == 1;
     }
 
     int possibleAliveEnemyArchonCount() throws GameActionException {

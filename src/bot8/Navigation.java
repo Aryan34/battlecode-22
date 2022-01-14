@@ -152,7 +152,7 @@ public class Navigation {
             minRubble = 1000;
         }
 
-        System.out.println("LEAST RUBBLE: " + minRubble);
+        // System.out.println("LEAST RUBBLE: " + minRubble);
         for (Direction dir : closeDirections(myLoc.directionTo(target).opposite())) {
             MapLocation newLoc = myLoc.add(dir);
             if (!rc.onTheMap(newLoc)) {
